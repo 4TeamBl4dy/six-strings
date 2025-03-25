@@ -1,0 +1,83 @@
+.Login {
+    display: flex;
+    justify-content: center;
+}
+
+.Login button {
+    display: block;
+}
+
+.login-form {
+    display: block;
+}
+
+.login-form h1 {
+    color: #FF6428;
+    text-align: center;
+}
+
+.login-input {
+    margin-bottom: 20px;
+    font-size: 20px;
+    border: none;
+    border-bottom: 1.5px solid #666666;
+    transition: 0.4s;
+    padding: 5px;
+    display: block;
+}
+
+.login-input:focus {
+    outline: none;
+    border-bottom: 1.5px solid #FF6428; 
+}
+
+.login-input:focus::placeholder {
+    color: #FF6428;
+}
+
+.login-form label {
+    display: flex;
+    font-size: 20px;
+}
+
+.login-form label input {
+    margin: 5px;
+}
+
+input[type="checkbox"] {
+    background-color: #FF6428;
+}
+
+.login-form button {
+    width: 100%;
+    color: white;
+    border: none;
+    background-color: #FF6428;
+    border-radius: 40px;
+    padding: 10px;
+    transition: 0.4s;
+    font-size: 20px;
+    margin: 10px auto 10px auto;
+}
+
+.login-form button:hover {
+    background-color: #c95020;
+}
+
+.login-form a {
+    font-size: 20px;
+    color: #666666;
+    margin-left: 20px;
+    transition: 0.4s;
+}
+
+.login-form a:hover {
+    color: #FF6428;
+}
+
+.mistake {
+    color: #FF6428;
+    font-size: 20px;
+    margin-bottom: 10px;
+    max-width: 247px;
+}
