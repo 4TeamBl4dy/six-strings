@@ -69,6 +69,7 @@ export const SalerDashboard = () => {
   // Обработчик выхода
   const handleLogout = () => {
     removeToken();
+    localStorage.clear();
     navigate('/login');
   };
 

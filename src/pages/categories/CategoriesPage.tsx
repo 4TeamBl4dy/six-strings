@@ -1,6 +1,8 @@
 import './styles.css';
 import { useState, ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
+import { Typography } from '@mui/material';
+import {theme} from '../../theme'
 
 import {BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
 
@@ -12,8 +14,13 @@ interface Guitar {
   cost: number;
   amount: number;
   type: string;
-  brand?: string; // Опционально, для ModalWindow
-  description?: string; // Опционально, для ModalWindow
+  brand?: string; 
+  description?: string;
+  seller: {
+    login: string;
+    name: string;
+    phone: string;
+  };
 }
 
 // Тип для пропсов компонента
@@ -93,6 +100,7 @@ export const CategoriesPage = ({ guitars }: PagesProps) => {
             <nav>
               <b>{guitar.name}</b>
             </nav>
+            <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
             <span>{guitar.cost}тг</span>
             <span className="errAmount">{guitar.amount === 0 ? err : unerr}</span>
             <div className="buttons">

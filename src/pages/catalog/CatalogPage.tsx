@@ -1,6 +1,8 @@
 import './styles.css';
 import { useState, ChangeEvent, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
+import { Typography } from '@mui/material';
+import {theme} from '../../theme'
 
 import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
 
@@ -12,8 +14,13 @@ interface Guitar {
   cost: number;
   amount: number;
   type: string;
-  brand?: string; // Опционально, для ModalWindow
-  description?: string; // Опционально, для ModalWindow
+  brand?: string;
+  description?: string; 
+  seller: {
+    login: string;
+    name: string;
+    phone: string;
+  };
 }
 
 export const CatalogPage = () => {
@@ -112,6 +119,7 @@ export const CatalogPage = () => {
               <nav>
                 <b>{guitar.name}</b>
               </nav>
+              <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
               <span>{guitar.cost}тг</span>
               <span className="errAmount">{guitar.amount === 0 ? err : unerr}</span>
               <div className="buttons">

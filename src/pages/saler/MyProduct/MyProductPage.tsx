@@ -2,7 +2,6 @@ import './styles.css';
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
-// Тип для объекта гитары
 interface Guitar {
   _id: string;
   img: string;
@@ -12,6 +11,11 @@ interface Guitar {
   amount: number;
   type: string;
   brand: string;
+  seller: {
+    login: string;
+    name: string;
+    phone: string;
+  };
 }
 
 export const MyProductsPage = () => {
@@ -30,19 +34,26 @@ export const MyProductsPage = () => {
   const [editedGuitarImg, setEditedGuitarImg] = useState<{ [key: string]: File | null }>({});
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Загрузка данных о гитарах
+  const sellerLogin = localStorage.getItem('login') || '';
+  const userName = localStorage.getItem('userName') || '';
+  const userPhone = localStorage.getItem('userPhone') || '';
+
   useEffect(() => {
     const fetchGuitars = async () => {
       try {
         const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        setGuitars(response.data || []);
+        console.log('Полученные гитары:', response.data); // Для отладки
+        const sellerGuitars = response.data.filter(guitar => guitar.seller?.login === sellerLogin);
+        setGuitars(sellerGuitars || []);
       } catch (error) {
         console.error('Ошибка при загрузке гитар:', error);
         setError('Не удалось загрузить товары.');
       }
     };
-    fetchGuitars();
-  }, []);
+    if (sellerLogin) {
+      fetchGuitars();
+    }
+  }, [sellerLogin]);
 
   const imageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
@@ -59,7 +70,7 @@ export const MyProductsPage = () => {
 
   const createGuitar = async (e: FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (!name || !img || !description || !cost || !amount || !type || !brand) {
+    if (!name || !img || !description || !cost || !amount || !type || !brand || !sellerLogin) {
       setError('Пропущено поле. Повторите ввод.');
       return;
     }
@@ -73,7 +84,11 @@ export const MyProductsPage = () => {
       formData.append('amount', amount);
       formData.append('type', type);
       formData.append('brand', brand);
+      formData.append('sellerLogin', sellerLogin);
+      formData.append('userName', userName);
+      formData.append('userPhone', userPhone);
 
+      console.log('Отправка данных для создания:', [...formData.entries()]); // Для отладки
       const response: AxiosResponse<Guitar> = await axios.post('http://localhost:8080/guitars', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -123,7 +138,11 @@ export const MyProductsPage = () => {
       formData.append('amount', String(parseInt(amount, 10)));
       formData.append('type', type);
       formData.append('brand', brand);
+      formData.append('sellerLogin', sellerLogin);
+      formData.append('userName', userName);
+      formData.append('userPhone', userPhone);
 
+      console.log('Отправка данных для обновления:', [...formData.entries()]); // Для отладки
       const response: AxiosResponse<Guitar> = await axios.put(`http://localhost:8080/guitars/${guitarId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -231,7 +250,7 @@ export const MyProductsPage = () => {
                     src={
                       editedGuitarImg[guitar._id]
                         ? URL.createObjectURL(editedGuitarImg[guitar._id]!)
-                        : `/items_pictures/${guitar.img}.png`
+                        : `/items_pictures/${guitar.img}`
                     }
                     alt={guitar.name}
                   />
@@ -270,7 +289,7 @@ export const MyProductsPage = () => {
                 </div>
               ) : (
                 <div>
-                  <img src={`/items_pictures/${guitar.img}.png`} alt={guitar.name} />
+                  <img src={`/items_pictures/${guitar.img}`} alt={guitar.name} />
                   <nav>Название: {guitar.name}</nav>
                   <nav>Описание: {guitar.description}</nav>
                   <nav>Цена: {guitar.cost}</nav>

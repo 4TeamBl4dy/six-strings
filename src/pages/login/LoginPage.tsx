@@ -41,7 +41,6 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
 
     let isValid = true;
 
-    // Проверка пустых полей
     if (!login) {
       setLoginError(true);
       setLoginErrorMessage('Поле с логином не должно быть пустым.');
@@ -72,6 +71,7 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
       setToken(token);
       localStorage.setItem('userName', name);
       localStorage.setItem('userPhone', phone);
+      localStorage.setItem('login', login);
 
       handleSetIsAuth(token);
       setName(name);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Box, Typography, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import './styles.css'
+import {theme} from '../../theme'
 
 // Тип для объекта гитары
 interface Guitar {
@@ -10,9 +11,14 @@ interface Guitar {
   name: string;
   cost: number;
   amount: number;
-  brand?: string; // Делаем опциональным
-  type?: string; // Делаем опциональным
-  description?: string; // Делаем опциональным
+  brand?: string;
+  type?: string;
+  description?: string;
+  seller: {
+    login: string;
+    name: string;
+    phone: string;
+  };
 }
 
 // Тип для пропсов компонента
@@ -68,6 +74,7 @@ export const ModalWindow = ({ guitar }: ModalWindowProps) => {
             <Typography id="modal-title" variant="h5" component="h2">
               {guitar.name}
             </Typography>
+            <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Typography variant="h6">Цена:</Typography>
               <Typography sx={{mt: 0.7}}>{guitar.cost}тг</Typography>

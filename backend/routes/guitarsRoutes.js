@@ -8,6 +8,7 @@ router.get('/guitars', async (req, res) => {
     const guitars = db.collection('Guitars');
 
     const data = await guitars.find({}).toArray();
+    console.log('Отправленные гитары:', data); // Для отладки
 
     client.close();
     res.json(data);
@@ -19,10 +20,12 @@ router.get('/guitars', async (req, res) => {
 
 router.post('/guitars', upload.single('img'), async (req, res) => {
   try {
-    const { name, description, cost, amount, type, brand } = req.body;
+    const { name, description, cost, amount, type, brand, sellerLogin, userName, userPhone } = req.body;
     const img = req.file?.filename;
 
-    if (!img || !name || !description || !cost || !amount || !type || !brand) {
+    console.log('POST данные:', { name, description, cost, amount, type, brand, sellerLogin, userName, userPhone, img }); // Для отладки
+
+    if (!img || !name || !description || !cost || !amount || !type || !brand || !sellerLogin || !userName || !userPhone) {
       return res.status(400).json({ error: 'Все поля обязательны' });
     }
 
@@ -34,6 +37,11 @@ router.post('/guitars', upload.single('img'), async (req, res) => {
       amount: parseInt(amount, 10),
       type,
       brand,
+      seller: {
+        login: sellerLogin,
+        name: userName,
+        phone: userPhone
+      }
     };
 
     const { client, db } = await connectToDb();
@@ -51,8 +59,10 @@ router.post('/guitars', upload.single('img'), async (req, res) => {
 router.put('/guitars/:id', upload.single('img'), async (req, res) => {
   try {
     const guitarId = req.params.id;
-    const { name, description, cost, amount, type, brand } = req.body;
+    const { name, description, cost, amount, type, brand, sellerLogin, userName, userPhone } = req.body;
     const img = req.file?.filename || req.body.img;
+
+    console.log('PUT данные:', { guitarId, name, description, cost, amount, type, brand, sellerLogin, userName, userPhone, img }); // Для отладки
 
     const updatedGuitar = {
       img,
@@ -62,6 +72,11 @@ router.put('/guitars/:id', upload.single('img'), async (req, res) => {
       amount: parseInt(amount, 10),
       type,
       brand,
+      seller: {
+        login: sellerLogin,
+        name: userName,
+        phone: userPhone
+      }
     };
 
     const { client, db } = await connectToDb();

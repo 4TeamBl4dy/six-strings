@@ -1,22 +1,34 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const dbUri = 'mongodb+srv://Vlad:123@cluster.66iafdi.mongodb.net/';
 const dbName = 'GuitarKZ';
 
-// Настройка multer для загрузки файлов
+const uploadDir = '../../public/items_pictures/';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/items_pictures/');
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const originalName = file.originalname.split('.').slice(0, -1).join('');
-    cb(null, originalName);
+    const ext = path.extname(file.originalname);
+    const name = file.originalname
+      .split('.')
+      .slice(0, -1)
+      .join('')
+      .replace(/[^a-zA-Z0-9-_]/g, '_')
+      .toLowerCase();
+    const uniqueName = `${name}_${Date.now()}${ext}`;
+    cb(null, uniqueName);
   },
 });
 const upload = multer({ storage });
 
-// Функция для подключения к базе данных
 const connectToDb = async () => {
   const client = await MongoClient.connect(dbUri);
   const db = client.db(dbName);

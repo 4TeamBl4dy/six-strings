@@ -3,7 +3,8 @@ import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
 import { useState, useEffect } from 'react';
 import { useSnapCarousel } from 'react-snap-carousel';
 import { NavLink } from 'react-router-dom';
-import { Box, Container } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
+import { theme } from '../../theme';
 
 interface Guitar {
   _id: string;
@@ -11,10 +12,14 @@ interface Guitar {
   name: string;
   cost: number;
   amount: number;
-  new?: boolean;
-  brand: string; // Добавляем поле brand
-  type: string; // Добавляем поле type
-  description: string; // Добавляем поле description
+  brand: string; 
+  type: string; 
+  description: string;
+  seller: {
+    login: string;
+    name: string;
+    phone: string;
+  };
 }
 
 interface GuitarComponentProps {
@@ -85,12 +90,13 @@ export const HomePage = () => {
                   {randomGuitars.map((guitar) => (
                     <div key={guitar._id} className="guitar">
                       <img
-                        src={`/items_pictures/${guitar.img}.png`} // Прямой путь к изображению
+                        src={`../../../public/items_pictures/${guitar.img}.png`} // Прямой путь к изображению
                         alt={guitar.name}
                       />
                       <nav>
                         <b>{guitar.name}</b>
                       </nav>
+                      <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
                       <span>{guitar.cost}тг</span>
                       <span className="errAmount">{guitar.amount === 0 ? err : unerr}</span>
                       <div className="buttons">

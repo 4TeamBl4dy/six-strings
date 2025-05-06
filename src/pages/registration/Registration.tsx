@@ -15,6 +15,12 @@ interface SignUpProps {
   handleSetIsAuth: (token: string) => void;
 }
 
+interface RegisterResponse {
+  token: string;
+  name: string;
+  phone: string;
+}
+
 export default function Registration({ handleSetIsAuth }: SignUpProps) {
   const [account, setAccount] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
@@ -43,7 +49,6 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
 
     let isValid = true;
 
-    // Проверка пустых полей
     if (!name) {
       setNameError(true);
       setNameErrorMessage('Поле с именем не должно быть пустым.');
@@ -105,24 +110,32 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
 
     try {
       const userData = {
-        login: login,
+        login,
         password,
         name,
         phone,
       };
 
-      const response: AxiosResponse<{ token: string }> = await axios.post(
+      console.log('Отправка данных для регистрации:', { saler, userData }); // Для отладки
+
+      const response: AxiosResponse<RegisterResponse> = await axios.post(
         saler ? 'http://localhost:8080/register_saler' : 'http://localhost:8080/register_user',
         userData
       );
 
-      const token = response.data.token;
-      localStorage.setItem('access_token', token);
-      localStorage.setItem('user_name', name);
-      localStorage.setItem('user_phone', phone);
+      const { token, name: responseName, phone: responsePhone } = response.data;
+      console.log('Ответ сервера:', response.data); // Для отладки
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('login', login);
+      localStorage.setItem('userName', responseName);
+      localStorage.setItem('userPhone', responsePhone);
       handleSetIsAuth(token);
       setAccount(true);
-      navigate(saler ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
+
+      const redirectPath = saler ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE;
+      console.log('Перенаправление на:', redirectPath); // Для отладки
+      navigate(redirectPath);
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error('Ошибка при регистрации:', axiosError);
@@ -138,6 +151,7 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
 
   const handleSetSaler = (e: ChangeEvent<HTMLInputElement>) => {
     setSaler(e.target.checked);
+    console.log('Флаг продавца:', e.target.checked);
   };
 
   const togglePasswordVisibility = () => {
