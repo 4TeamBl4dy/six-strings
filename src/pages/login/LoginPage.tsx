@@ -1,57 +1,71 @@
-import './LoginPage.css';
+import './styles.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { setToken, fetchToken } from '../../hooks'; 
-import Logo from '../../../public/logo.png';
-import { Box } from '@mui/material';
-import { ROUTES, isStrongPassword } from '../../constants';
+import Logo from '../../../public/icons/logo.png';
+import { Box, Typography, InputAdornment } from '@mui/material';
+import { ROUTES } from '../../constants';
+import { StyledCheckbox } from '../../components/styledComponents';
+import { Field } from '../../components';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-// Тип для пропсов компонента
 interface LoginProps {
   handleSetIsAuth: (token: string) => void;
 }
 
-// Тип для данных ответа от сервера
 interface LoginResponse {
   token: string;
   name: string;
   phone: string;
 }
 
-export default function Login({ handleSetIsAuth }: LoginProps) {
+export const Login = ({ handleSetIsAuth }: LoginProps) => {
   const [account, setAccount] = useState<boolean>(false);
-  const [loginMis, setLoginMis] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
+  const [login, setLogin] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [name, setName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [admin, setAdmin] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<boolean>(false);
+  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<boolean>(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string>('');
 
   const navigate = useNavigate();
 
-  const LoginBtn = async (e: React.FormEvent<HTMLButtonElement>) => {
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Базовые проверки
-    if (email === '' && password === '') {
-      setLoginMis('Поля с электронной почтой и паролем не должны быть пустыми.');
-      return;
-    }
-    if (email === '') {
-      setLoginMis('Поле с электронной почтой не должно быть пустым.');
-      return;
-    }
-    if (password === '') {
-      setLoginMis('Поле с паролем не должно быть пустым.');
-      return;
+    let isValid = true;
+
+    // Проверка пустых полей
+    if (!login) {
+      setLoginError(true);
+      setLoginErrorMessage('Поле с логином не должно быть пустым.');
+      isValid = false;
+    } else {
+      setLoginError(false);
+      setLoginErrorMessage('');
     }
 
-    // Если все проверки пройдены, отправляем запрос
+    if (!password) {
+      setPasswordError(true);
+      setPasswordErrorMessage('Поле с паролем не должно быть пустым.');
+      isValid = false;
+    } else {
+      setPasswordError(false);
+      setPasswordErrorMessage('');
+    }
+
+    if (!isValid) return;
+
     try {
       const response: AxiosResponse<LoginResponse> = await axios.post(
-        admin ? 'http://localhost:8080/login_admin' : 'http://localhost:8080/login_user',
-        { email, password }
+        admin ? 'http://localhost:8080/login_saler' : 'http://localhost:8080/login_user',
+        { login: login, password }
       );
       const { token, name, phone } = response.data;
 
@@ -63,20 +77,28 @@ export default function Login({ handleSetIsAuth }: LoginProps) {
       setName(name);
       setPhone(phone);
       setAccount(true);
-      navigate(admin ? '/админ' : '/главная');
+      navigate(admin ? ROUTES.SALER_PAGE : ROUTES.HOME_PAGE);
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error(axiosError);
       if (axiosError.response) {
         if (axiosError.response.status === 401) {
-          setLoginMis('Пользователь с такой почтой не найден');
+          setLoginError(true);
+          setLoginErrorMessage('Пользователь с таким логином не найден');
         } else if (axiosError.response.status === 402) {
-          setLoginMis('Неверный пароль');
+          setPasswordError(true);
+          setPasswordErrorMessage('Неверный пароль');
         } else {
-          setLoginMis('Произошла ошибка. Пожалуйста, попробуйте снова.');
+          setLoginError(true);
+          setLoginErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
+          setPasswordError(true);
+          setPasswordErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
         }
       } else {
-        setLoginMis('Произошла ошибка сети. Проверьте подключение.');
+        setLoginError(true);
+        setLoginErrorMessage('Произошла ошибка сети. Проверьте подключение.');
+        setPasswordError(true);
+        setPasswordErrorMessage('Произошла ошибка сети. Проверьте подключение.');
       }
     }
   };
@@ -85,42 +107,63 @@ export default function Login({ handleSetIsAuth }: LoginProps) {
     setAdmin((prev) => !prev);
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
+
   const auth = fetchToken();
 
   useEffect(() => {
     if (auth) {
-      navigate(ROUTES.HOME_PAGE);
+      navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
     }
   }, [auth, navigate]);
 
   return (
     <div className="Login">
       <div className="login-form">
-        <img src={Logo} />
-        <Box sx={{ mx: '70px' }}>
-          <h1>ВХОД</h1>
-          <input
-            className="login-input"
-            placeholder="Email"
-            value={email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-          />
-          <input
-            className="login-input"
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-          />
-          <nav className="mistake">{loginMis}</nav>
-          <label>
-            <input type="checkbox" checked={admin} onChange={handleSetAdmin} />
-            Войти как администратор
-          </label>
-          <button onClick={LoginBtn}>Войти</button>
-          <NavLink to="/регистрация">
-            <a>Зарегистрироваться</a>
-          </NavLink>
+        <img src={Logo} className="logo" />
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <h3>ВХОД</h3>
+          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div className="input-container">
+              <Field
+                sx={{ minWidth: '272px' }}
+                placeholder="Логин"
+                value={login}
+                onChange={(value: string) => setLogin(value)}
+                error={loginError}
+                helperText={loginErrorMessage}
+              />
+            </div>
+            <div className="input-container">
+              <Field
+                sx={{ minWidth: '272px' }}
+                placeholder="Пароль"
+                value={password}
+                onChange={(value: string) => setPassword(value)}
+                type={showPassword ? 'text' : 'password'}
+                error={passwordError}
+                helperText={passwordErrorMessage}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <span className="eye-icon" onClick={togglePasswordVisibility}>
+                        {showPassword ? <VisibilityOffIcon sx={{ fontSize: '18px', mt: 1 }} /> : <VisibilityIcon sx={{ fontSize: '18px', mt: 1 }} />}
+                      </span>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </div>
+            <Typography>
+              <StyledCheckbox checked={admin} onChange={handleSetAdmin} />Войти как продавец
+            </Typography>
+            <button type="submit">Войти</button>
+            <NavLink to={ROUTES.REGISTRATION}>
+              <a>Зарегистрироваться</a>
+            </NavLink>
+          </form>
         </Box>
       </div>
     </div>

@@ -1,0 +1,130 @@
+input {
+    display: block;
+}
+
+.exitBtn {
+    width: 150px;
+    position: relative;
+    top: 20px;
+    left: 1500px;
+    font-size: 18px;
+    background-color: #FF6428;
+    border: none;
+    color: white;
+    border-radius: 10px;
+    padding: 10px;
+    transition: 0.4s;
+}
+
+.exitBtn:hover {
+    background-color: #d15321;
+}
+
+.addGuitar {
+    width: 300px;
+    margin: 0 0 40px 20px;
+}
+
+.addGuitar h1 {
+    color: #FF6428;
+    text-align: center;
+}
+
+.addGuitar-form {
+    border: 2px solid #FF6428;
+    border-radius: 10px;
+    padding: 20px;
+    font-size: 18px;
+}
+
+.addGuitar-form input {
+    background: none;
+    border: none;
+    border-bottom: 2px solid #FF6428;
+    padding: 5px;
+    font-size: 18px;
+    margin-top: 15px;
+}
+
+.Menu input:focus {
+    outline: none;
+}
+
+.addGuitar-form input::placeholder {
+    color: #FF6428;
+}
+
+.changeImage {
+    border: none !important;
+    font-size: 16px !important;
+    padding: 0 !important;
+    max-width: 235px;
+}
+
+.checkParams {
+    display: flex;
+    margin-top: 20px;
+}
+
+.checkParams input {
+    width: 20px;
+    height: 20px;
+    margin: 4px 0 0 10px;
+}
+
+.Menu button {
+    background-color: #FF6428;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 150px;
+    font-size: 18px;
+    padding: 5px 10px 5px 10px;
+    margin-top: 20px;
+    margin-right: 10px;
+    transition: 0.4s;
+}
+
+.Menu button:hover {
+    background-color: #d15321;
+}
+
+.infoChange {
+    padding: 20px;
+} 
+
+.infoGuitars {
+    color:#FF6428;
+    margin: 10px 0 20px 0;
+}
+
+.searchAdmin {
+    display: flex;
+}
+
+.searchAdmin input {
+    color: black !important;
+    margin: 3px 0 0 10px;
+}
+
+.adminCard {
+    width: 300px;
+    border: 2px solid #FF6428;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 30px;
+}
+
+.adminCard img {
+    width: 300px;
+    height: 300px;
+}
+
+.adminCard nav {
+    margin-top: 10px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: 400px 400px 400px 400px;
+}

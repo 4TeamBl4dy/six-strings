@@ -1,0 +1,112 @@
+.Login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.login-form .logo {
+    margin: 0 auto;
+    width: 250px;
+    height: 150px;
+}
+
+.login-form h3 {
+    color: #FF6428;
+    margin: 10px 0;
+}
+
+/* Контейнер для инпутов */
+.input-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+    margin: 5px 0;
+}
+
+/* Стили для Field (предполагается, что это Material-UI TextField) */
+.login-form .MuiTextField-root {
+    width: 100%;
+    max-width: 300px;
+    margin: 10px 0;
+}
+
+/* Стили для инпута внутри Field */
+.login-form .MuiInputBase-input {
+    font-size: 14px;
+    padding: 5px;
+    border: none;
+    transition: 0.4s;
+}
+
+/* Стили для текста ошибки */
+.login-form .MuiFormHelperText-root {
+    color: red !important;
+    font-size: 14px !important;
+    max-width: 300px !important;
+}
+
+.login-form .MuiInputBase-input:focus {
+    outline: none;
+}
+
+.login-form .MuiInputBase-input:focus::placeholder {
+    color: #FF6428;
+}
+
+.login-form button {
+    width: 100%;
+    max-width: 300px;
+    color: white;
+    border: none;
+    background-color: #FF6428;
+    border-radius: 16px;
+    padding: 10px;
+    transition: 0.4s;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.login-form button:hover {
+    background-color: #c95020;
+}
+
+.login-form a {
+    font-size: 14px;
+    color: #666666;
+    transition: 0.4s;
+    display: block;
+    margin: 10px 0;
+}
+
+.login-form a:hover {
+    color: #FF6428;
+}
+
+.login-form label {
+    font-size: 14px;
+    color: #666666;
+    margin: 10px 0;
+}
+
+.login-form input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+/* Стили для иконки глаза */
+.eye-icon {
+    cursor: pointer;
+    color: #666666;
+}
+
+.eye-icon:hover {
+    color: #FF6428;
+}

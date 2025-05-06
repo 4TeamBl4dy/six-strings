@@ -1,0 +1,82 @@
+.guitarBasket {
+    display: flex;
+    margin: 50px 0 50px 0;
+    display: flex;
+    justify-content: space-around;
+    overflow-y: auto;
+}
+
+.basketImg {
+    width: 150px;
+    height: 150px;
+}
+
+.guitarBasket h3 {
+    margin-top: 50px;
+}
+
+.guitarBasket span {
+    margin-top: 50px;
+    font-size: 20px;
+}
+
+.changeCount {
+    background: none;
+    border: none;
+    font-size: 40px;
+    opacity: 0.5;
+    transition: 0.5s;
+}
+
+.changeCount:hover {
+    opacity: 1;
+}
+
+.count {
+    font-size: 20px;
+    margin-top: 50px;
+}
+
+.Basket-title {
+    color: #FF6428;
+    text-align: center;
+}
+
+#deleteBtn {
+    margin-top: 50px;
+}
+
+.basket-end {
+    position: fixed;
+    background-color: white;
+    width: 100%;
+    bottom: 0;
+    padding: 20px 0 0px 0;
+    font-size: 20px;
+    border-top: 2px solid #666666;
+    text-align: end;
+}
+
+.basket-end nav {
+    margin-right: 20px;
+}
+
+.basket-end button {
+    width: 160px;
+    padding: 10px;
+    background-color: #FF6428;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 25px;
+    margin: 20px 20px 0 0;
+    transition: 0.4s;
+}
+
+.basket-end button:hover {
+    background-color: #bf4e21;
+}
+
+.basket-end button:active {
+    background-color: #993e1a;
+}

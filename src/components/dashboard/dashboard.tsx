@@ -5,10 +5,14 @@ import HomeIcon from '@mui/icons-material/Home';
 import Contacts from '@mui/icons-material/Contacts';
 import Favorite from '@mui/icons-material/Favorite';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
-import { Breadcrumbs, Title } from '../'; 
-import { demoTheme } from './dashboard';
-import Logo from '../../../public/smallLogo.png'
+import { Breadcrumbs, Title } from '../';
+import { demoTheme } from './styles';
+import Logo from '../../../public/icons/smallLogo.png';
 import { ROUTES } from '../../constants';
+import { SidebarFooterProfile } from './FootDashboard/FootDasboard'; // Импортируем новый компонент
+import { useEffect, useState } from 'react';
+import axios, { AxiosResponse, AxiosError } from 'axios';
+import { removeToken } from '../../hooks';
 
 // Навигация
 const NAVIGATION: Navigation = [
@@ -34,9 +38,45 @@ const NAVIGATION: Navigation = [
   },
 ];
 
+interface User {
+  name: string;
+  email: string;
+}
+
 export const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [user, setUser] = useState<User | null>(null);
+
+  // Получение данных пользователя
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    axios
+      .get('http://localhost:8080/user', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response: AxiosResponse<User>) => {
+        setUser(response.data);
+      })
+      .catch((error: AxiosError) => {
+        console.error('Ошибка при загрузке данных пользователя:', error);
+        if (error.response?.status === 401) {
+          removeToken();
+          navigate('/login');
+        }
+      });
+  }, [navigate]);
+
+  // Обработчик выхода
+  const handleLogout = () => {
+    removeToken();
+    navigate('/login');
+  };
 
   // Кастомный роутер для Toolpad
   const router = {
@@ -49,15 +89,18 @@ export const Dashboard = () => {
     <AppProvider navigation={NAVIGATION} router={router} theme={demoTheme}>
       <ToolpadDashboardLayout
         slots={{
-            appTitle: () => (
-            <NavLink to={ROUTES.HOME_PAGE} style={{display: 'flex', textDecoration: 'none'}}>
-                <img
+          appTitle: () => (
+            <NavLink to={ROUTES.HOME_PAGE} style={{ display: 'flex', textDecoration: 'none' }}>
+              <img
                 src={Logo}
                 alt="Logo"
                 style={{ height: '40px', width: 'auto' }} // Настройте размер по необходимости
-                />
-                <Title size={'h3'} text={'SixStrings'} sx={{paddingTop: 1, color: '#FF6428'}} />
+              />
+              <Title size={'h3'} text={'SixStrings'} sx={{ paddingTop: 1, color: '#FF6428' }} />
             </NavLink>
+          ),
+          sidebarFooter: () => (
+            <SidebarFooterProfile user={user} onLogout={handleLogout} />
           ),
         }}
       >

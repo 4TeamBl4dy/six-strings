@@ -1,0 +1,30 @@
+.categories {
+    display: grid;
+    grid-template-columns: 320px 320px 320px 320px 320px;
+}
+
+.Page h2 {
+    color: #FF6428;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.sort-cost {
+    display: flex;
+    margin: 20px;
+    justify-content: end;
+}
+
+.sort-cost label {
+    margin-right: 10px;
+}
+
+.searchGuitar {
+    margin: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.searchGuitar label {
+    margin: 0 10px 5px 0;
+}
