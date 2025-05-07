@@ -3,10 +3,10 @@ import { useState, ChangeEvent, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { Typography } from '@mui/material';
 import {theme} from '../../theme'
+import {handleImageError} from '../../utils'
 
 import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
 
-// Тип для объекта гитары
 interface Guitar {
   _id: string;
   img: string;
@@ -33,7 +33,6 @@ export const CatalogPage = () => {
   const err: string = 'Нет в наличии';
   const unerr: string = '';
 
-  // Загрузка данных с сервера
   useEffect(() => {
     setLoading(true);
     axios
@@ -49,12 +48,10 @@ export const CatalogPage = () => {
       });
   }, []);
 
-  // Типизация события для select
   const handleSortChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setSortBy(event.target.value as 'default' | 'ascending' | 'descending');
   };
 
-  // Типизация события для input
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
@@ -115,7 +112,11 @@ export const CatalogPage = () => {
         ) : (
           sortedAndFilteredGuitars.map((guitar) => (
             <div key={guitar._id} className="guitar">
-              <img src={`/items_pictures/${guitar.img}.png`} alt={guitar.name} />
+              <img 
+                src={guitar.img} 
+                alt={guitar.name} 
+                onError={handleImageError} 
+              />
               <nav>
                 <b>{guitar.name}</b>
               </nav>

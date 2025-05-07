@@ -5,6 +5,7 @@ import { useSnapCarousel } from 'react-snap-carousel';
 import { NavLink } from 'react-router-dom';
 import { Box, Container, Typography } from '@mui/material';
 import { theme } from '../../theme';
+import {handleImageError} from '../../utils'
 
 interface Guitar {
   _id: string;
@@ -12,8 +13,8 @@ interface Guitar {
   name: string;
   cost: number;
   amount: number;
-  brand: string; 
-  type: string; 
+  brand: string;
+  type: string;
   description: string;
   seller: {
     login: string;
@@ -28,13 +29,13 @@ interface GuitarComponentProps {
 
 // Типизация функции getRandomItems
 const getRandomItems = <T,>(array: T[], count: number): T[] => {
-  const shuffled = [...array].sort(() => 0.5 - Math.random()); // Перемешиваем массив
-  return shuffled.slice(0, count); // Берем первые `count` элементов
+  const shuffled = [...array].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
 };
 
 export const HomePage = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [randomGuitars, setRandomGuitars] = useState<Guitar[]>([]); // Новое состояние для случайных гитар
+  const [randomGuitars, setRandomGuitars] = useState<Guitar[]>([]);
   const err: string = 'Нет в наличии';
   const unerr: string = '';
 
@@ -57,7 +58,7 @@ export const HomePage = () => {
       const selectedGuitars = getRandomItems(guitars, 15);
       setRandomGuitars(selectedGuitars);
     }
-  }, [guitars]); // Зависимость только от guitars
+  }, [guitars]);
 
   const {
     scrollRef: randomGuitarsScrollRef,
@@ -80,7 +81,7 @@ export const HomePage = () => {
                   ‹
                 </button>
                 <ul
-                  ref={randomGuitarsScrollRef} // Передаём scrollRef напрямую
+                  ref={randomGuitarsScrollRef}
                   style={{
                     display: 'flex',
                     overflow: 'auto',
@@ -90,13 +91,16 @@ export const HomePage = () => {
                   {randomGuitars.map((guitar) => (
                     <div key={guitar._id} className="guitar">
                       <img
-                        src={`../../../public/items_pictures/${guitar.img}.png`} // Прямой путь к изображению
+                        src={guitar.img}
                         alt={guitar.name}
+                        onError={handleImageError}
                       />
                       <nav>
                         <b>{guitar.name}</b>
                       </nav>
-                      <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
+                      <Typography sx={{ color: theme.palette.primary.main }}>
+                        {guitar.seller.login}
+                      </Typography>
                       <span>{guitar.cost}тг</span>
                       <span className="errAmount">{guitar.amount === 0 ? err : unerr}</span>
                       <div className="buttons">
@@ -176,7 +180,7 @@ export const HomePage = () => {
           </label>
         </div>
 
-        <Box className="kakhochesh" sx={{textAlign: 'center'}}>
+        <Box className="kakhochesh" sx={{ textAlign: 'center' }}>
           <div className="text">
             <span className="header"> У нас </span>
             <span className="header1"> лучшие бренды</span>
@@ -185,28 +189,31 @@ export const HomePage = () => {
         </Box>
       </Container>
       <div className="kaktotak">
-          <div className="Rhytm">
-            <span className="text1"> Почему </span>
-            <span className="text2"> Guitar.kz? </span>
+        <div className="Rhytm">
+          <span className="text1"> Почему </span>
+          <span className="text2"> Guitar.kz? </span>
+        </div>
+        <div className="imgcomp">
+          <div className="imgcomp1">
+            <img src="/icons/comp1.png" alt="Smooth Browsing" />
+            <span> Плавный просмотр </span>
+            <label>
+              Приятный, простой и удобный дизайн, который легко поможет вам найти то,
+              что нужно.
+            </label>
           </div>
-          <div className="imgcomp">
-            <div className="imgcomp1">
-              <img src="/icons/comp1.png" alt="Smooth Browsing" />
-              <span> Плавный просмотр </span>
-              <label> Приятный, простой и удобный дизайн, который легко поможет вам найти то, что нужно. </label>
-            </div>
-            <div className="imgcomp1">
-              <img src="/icons/comp2.png" alt="Simple Delivery" />
-              <span> ПРОСТАЯ доставка </span>
-              <label> Достаточно просто ввести свой адрес. </label>
-            </div>
-            <div className="imgcomp1">
-              <img src="/icons/comp3.png" alt="Convenient Payments" />
-              <span> Удобные ПЛАТЕЖИ </span>
-              <label> Надёжные платежи со 100% гарантией. </label>
-            </div>
+          <div className="imgcomp1">
+            <img src="/icons/comp2.png" alt="Simple Delivery" />
+            <span> ПРОСТАЯ доставка </span>
+            <label> Достаточно просто ввести свой адрес. </label>
+          </div>
+          <div className="imgcomp1">
+            <img src="/icons/comp3.png" alt="Convenient Payments" />
+            <span> Удобные ПЛАТЕЖИ </span>
+            <label> Надёжные платежи со 100% гарантией. </label>
           </div>
         </div>
+      </div>
     </>
   );
 };

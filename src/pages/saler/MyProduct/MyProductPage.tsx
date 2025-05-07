@@ -42,7 +42,7 @@ export const MyProductsPage = () => {
     const fetchGuitars = async () => {
       try {
         const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        console.log('Полученные гитары:', response.data); // Для отладки
+        console.log('Полученные гитары:', response.data); 
         const sellerGuitars = response.data.filter(guitar => guitar.seller?.login === sellerLogin);
         setGuitars(sellerGuitars || []);
       } catch (error) {
@@ -131,6 +131,8 @@ export const MyProductsPage = () => {
       const formData = new FormData();
       if (editedGuitarImg[guitarId]) {
         formData.append('img', editedGuitarImg[guitarId]!);
+      } else {
+        formData.append('img', guitars.find((g) => g._id === guitarId)!.img); // Передаем текущий URL
       }
       formData.append('name', name);
       formData.append('description', description);
@@ -250,7 +252,7 @@ export const MyProductsPage = () => {
                     src={
                       editedGuitarImg[guitar._id]
                         ? URL.createObjectURL(editedGuitarImg[guitar._id]!)
-                        : `/items_pictures/${guitar.img}`
+                        : guitar.img // Используем URL из R2
                     }
                     alt={guitar.name}
                   />
@@ -289,7 +291,7 @@ export const MyProductsPage = () => {
                 </div>
               ) : (
                 <div>
-                  <img src={`/items_pictures/${guitar.img}`} alt={guitar.name} />
+                  <img src={guitar.img} alt={guitar.name} /> 
                   <nav>Название: {guitar.name}</nav>
                   <nav>Описание: {guitar.description}</nav>
                   <nav>Цена: {guitar.cost}</nav>

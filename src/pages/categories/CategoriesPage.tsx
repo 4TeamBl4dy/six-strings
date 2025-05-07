@@ -3,6 +3,7 @@ import { useState, ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { Typography } from '@mui/material';
 import {theme} from '../../theme'
+import {handleImageError} from '../../utils'
 
 import {BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
 
@@ -94,9 +95,10 @@ export const CategoriesPage = ({ guitars }: PagesProps) => {
         {sortedAndFilteredGuitars.map((guitar) => (
           <div key={guitar._id} className="guitar">
             <img
-              src={`/items_pictures/${guitar.img}.png`} // Прямой путь к изображению
+              src={guitar.img}
               alt={guitar.name}
-            />
+              onError={handleImageError}
+            />                                    
             <nav>
               <b>{guitar.name}</b>
             </nav>

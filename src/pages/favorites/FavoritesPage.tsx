@@ -6,6 +6,7 @@ import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Typography } from '@mui/material';
 import {theme} from '../../theme'
+import {handleImageError} from '../../utils'
 
 // Тип для объекта в избранном
 interface FavoriteItem {
@@ -14,11 +15,6 @@ interface FavoriteItem {
   guitarName: string;
   guitarCost: number;
   guitarAmount: number;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
 }
 
 export const FavoritesPage = () => {
@@ -132,11 +128,15 @@ export const FavoritesPage = () => {
           <div className="favoritesList">
             {favorites.map((guitar) => (
               <div key={guitar.guitarId} className="guitar">
-                <img src={`/items_pictures/${guitar.guitarImg}.png`} alt={guitar.guitarName} />
+                <img 
+                  className="basketImg"
+                  src={guitar.guitarImg} 
+                  alt={guitar.guitarName} 
+                  onError={handleImageError} 
+                />                                
                 <nav>
                   <b>{guitar.guitarName}</b>
                 </nav>
-                <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
                 <span>{guitar.guitarCost}тг</span>
                 <div className="buttons">
                   <button

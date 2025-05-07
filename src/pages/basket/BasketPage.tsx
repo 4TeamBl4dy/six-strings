@@ -3,15 +3,15 @@ import { useState, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
+import {handleImageError} from '../../utils'
 
-// Тип для объекта в корзине
 interface BasketItem {
   guitarId: string;
   guitarImg: string;
   guitarName: string;
   guitarCost: number;
   guitarCount: number;
-  guitarAmount: number; // Максимальное количество, доступное для покупки
+  guitarAmount: number;
 }
 
 export const Basket = () => {
@@ -176,10 +176,11 @@ export const Basket = () => {
           </button>
           {basket.map((guitar) => (
             <div key={guitar.guitarId} className="guitarBasket">
-              <img
+              <img 
                 className="basketImg"
-                src={`/items_pictures/${guitar.guitarImg}.png`}
-                alt={guitar.guitarName}
+                src={guitar.guitarImg} 
+                alt={guitar.guitarName} 
+                onError={handleImageError} 
               />
               <h3>{guitar.guitarName}</h3>
               <button onClick={() => countPlus(guitar.guitarId)} className="changeCount">

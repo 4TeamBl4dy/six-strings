@@ -145,10 +145,6 @@ router.patch('/basket/delete', authenticateToken, async (req, res) => {
         { _id: new ObjectId(guitarId) },
         { $inc: { amount: -guitarCount } }
       ).catch((error) => console.error(error));
-
-      if (result.modifiedCount !== 1) {
-        console.log(`Modified count: ${result.modifiedCount}`);
-      }
     }
 
     await users.updateOne(

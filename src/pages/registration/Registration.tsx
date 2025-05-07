@@ -116,8 +116,6 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
         phone,
       };
 
-      console.log('Отправка данных для регистрации:', { saler, userData }); // Для отладки
-
       const response: AxiosResponse<RegisterResponse> = await axios.post(
         saler ? 'http://localhost:8080/register_saler' : 'http://localhost:8080/register_user',
         userData

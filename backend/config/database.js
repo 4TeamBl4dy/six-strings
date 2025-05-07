@@ -1,38 +1,30 @@
 const { MongoClient, ObjectId } = require('mongodb');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-const dbUri = 'mongodb+srv://Vlad:123@cluster.66iafdi.mongodb.net/';
-const dbName = 'GuitarKZ';
+// MongoDB configuration
+const dbUri = process.env.MONGODB_URI;
+const dbName = process.env.MONGODB_DB_NAME;
 
-const uploadDir = '../../public/items_pictures/';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Отладка: проверить, какие переменные загружены
+
+// Проверка наличия переменных окружения
+if (!dbUri || !dbName) {
+  throw new Error('MONGODB_URI or MONGODB_DB_NAME is not defined in .env');
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const name = file.originalname
-      .split('.')
-      .slice(0, -1)
-      .join('')
-      .replace(/[^a-zA-Z0-9-_]/g, '_')
-      .toLowerCase();
-    const uniqueName = `${name}_${Date.now()}${ext}`;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
-
 const connectToDb = async () => {
-  const client = await MongoClient.connect(dbUri);
-  const db = client.db(dbName);
-  return { client, db };
+  try {
+    const client = await MongoClient.connect(dbUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    const db = client.db(dbName);
+    return { client, db };
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error);
+    throw error;
+  }
 };
 
-module.exports = { connectToDb, ObjectId, upload };
+module.exports = { connectToDb, ObjectId };

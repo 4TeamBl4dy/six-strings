@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { connectToDb, ObjectId, upload } = require('../config/database');
+const { connectToDb, ObjectId } = require('../config/database');
+const { s3Client, upload } = require('../config/r2');
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+require('dotenv').config();
 
 router.get('/guitars', async (req, res) => {
   try {
@@ -8,7 +11,6 @@ router.get('/guitars', async (req, res) => {
     const guitars = db.collection('Guitars');
 
     const data = await guitars.find({}).toArray();
-    console.log('Отправленные гитары:', data); // Для отладки
 
     client.close();
     res.json(data);
@@ -21,16 +23,27 @@ router.get('/guitars', async (req, res) => {
 router.post('/guitars', upload.single('img'), async (req, res) => {
   try {
     const { name, description, cost, amount, type, brand, sellerLogin, userName, userPhone } = req.body;
-    const img = req.file?.filename;
-
-    console.log('POST данные:', { name, description, cost, amount, type, brand, sellerLogin, userName, userPhone, img }); // Для отладки
+    const img = req.file;
 
     if (!img || !name || !description || !cost || !amount || !type || !brand || !sellerLogin || !userName || !userPhone) {
       return res.status(400).json({ error: 'Все поля обязательны' });
     }
 
+    const fileName = `${Date.now()}-${img.originalname}`;
+    const uploadParams = {
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: fileName,
+      Body: img.buffer,
+      ContentType: img.mimetype,
+      ACL: 'public-read',
+    };
+
+    await s3Client.send(new PutObjectCommand(uploadParams));
+
+    const imgUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+
     const newGuitar = {
-      img,
+      img: imgUrl,
       name,
       description,
       cost: parseFloat(cost),
@@ -40,8 +53,8 @@ router.post('/guitars', upload.single('img'), async (req, res) => {
       seller: {
         login: sellerLogin,
         name: userName,
-        phone: userPhone
-      }
+        phone: userPhone,
+      },
     };
 
     const { client, db } = await connectToDb();
@@ -51,8 +64,8 @@ router.post('/guitars', upload.single('img'), async (req, res) => {
     client.close();
     res.json({ ...newGuitar, _id: result.insertedId });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Ошибка при загрузке в R2:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
@@ -60,12 +73,24 @@ router.put('/guitars/:id', upload.single('img'), async (req, res) => {
   try {
     const guitarId = req.params.id;
     const { name, description, cost, amount, type, brand, sellerLogin, userName, userPhone } = req.body;
-    const img = req.file?.filename || req.body.img;
+    let imgUrl = req.body.img;
 
-    console.log('PUT данные:', { guitarId, name, description, cost, amount, type, brand, sellerLogin, userName, userPhone, img }); // Для отладки
+    if (req.file) {
+      const fileName = `${Date.now()}-${req.file.originalname}`;
+      const uploadParams = {
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileName,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        ACL: 'public-read',
+      };
 
+      await s3Client.send(new PutObjectCommand(uploadParams));
+      imgUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+    }
+    
     const updatedGuitar = {
-      img,
+      img: imgUrl,
       name,
       description,
       cost: parseFloat(cost),
@@ -75,8 +100,8 @@ router.put('/guitars/:id', upload.single('img'), async (req, res) => {
       seller: {
         login: sellerLogin,
         name: userName,
-        phone: userPhone
-      }
+        phone: userPhone,
+      },
     };
 
     const { client, db } = await connectToDb();
@@ -94,8 +119,8 @@ router.put('/guitars/:id', upload.single('img'), async (req, res) => {
     client.close();
     res.json(updatedGuitar);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Ошибка при обновлении в R2:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
