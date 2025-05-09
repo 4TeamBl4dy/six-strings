@@ -56,20 +56,6 @@ export const Dashboard = () => {
       return;
     }
 
-    axios
-      .get('http://localhost:8080/user', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response: AxiosResponse<User>) => {
-        setUser(response.data);
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при загрузке данных пользователя:', error);
-        if (error.response?.status === 401) {
-          removeToken();
-          navigate('/login');
-        }
-      });
   }, [navigate]);
 
   // Обработчик выхода

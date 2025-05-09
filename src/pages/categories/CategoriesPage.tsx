@@ -1,13 +1,12 @@
 import './styles.css';
-import { useState, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import { Typography } from '@mui/material';
-import {theme} from '../../theme'
-import {handleImageError} from '../../utils'
+import { theme } from '../../theme';
+import { handleImageError } from '../../utils';
+import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
 
-import {BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
-
-// Тип для объекта гитары
 interface Guitar {
   _id: string;
   img: string;
@@ -15,7 +14,7 @@ interface Guitar {
   cost: number;
   amount: number;
   type: string;
-  brand?: string; 
+  brand?: string;
   description?: string;
   seller: {
     login: string;
@@ -24,33 +23,42 @@ interface Guitar {
   };
 }
 
-// Тип для пропсов компонента
-interface PagesProps {
-  guitars: Guitar[];
-}
-
-export const CategoriesPage = ({ guitars }: PagesProps) => {
-  const { category } = useParams<{ category: string }>(); // Типизация useParams
-  const decodedCategory = decodeURIComponent(category?.replace(/-/g, '') || '');
-  const categoryTitle = decodeURIComponent(category?.replace(/-/g, '') || '').replace(/_/g, ' ');
-  const [sortBy, setSortBy] = useState<'default' | 'ascending' | 'descending'>('default'); // Типизация состояния
+export const CategoriesPage = () => {
+  const { category } = useParams<{ category: string }>();
+  const [guitars, setGuitars] = useState<Guitar[]>([]);
+  const [sortBy, setSortBy] = useState<'default' | 'ascending' | 'descending'>('default');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const err: string = 'Нет в наличии';
-  const unerr: string = '';
+  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Категория';
 
-  // Типизация события для select
+  useEffect(() => {
+    const fetchGuitars = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('http://localhost:8080/guitars');
+        setGuitars(response.data || []);
+      } catch (err) {
+        setError('Не удалось загрузить товары.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGuitars();
+  }, []);
+
   const handleSortChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setSortBy(event.target.value as 'default' | 'ascending' | 'descending');
   };
 
-  // Типизация события для input
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
   const sortAndFilterGuitars = (guitars: Guitar[]): Guitar[] => {
-    let filteredGuitars = guitars.filter((guitar) => guitar.type === decodedCategory);
+    let filteredGuitars = guitars.filter((guitar) => guitar.type.toLowerCase() === category?.toLowerCase());
 
     if (searchTerm) {
       filteredGuitars = filteredGuitars.filter((guitar) =>
@@ -69,6 +77,9 @@ export const CategoriesPage = ({ guitars }: PagesProps) => {
   };
 
   const sortedAndFilteredGuitars = sortAndFilterGuitars(guitars);
+
+  if (loading) return <div>Загрузка...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="Page">
@@ -98,13 +109,13 @@ export const CategoriesPage = ({ guitars }: PagesProps) => {
               src={guitar.img}
               alt={guitar.name}
               onError={handleImageError}
-            />                                    
+            />
             <nav>
               <b>{guitar.name}</b>
             </nav>
-            <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
+            <Typography sx={{ color: theme.palette.primary.main }}>{guitar.seller.login}</Typography>
             <span>{guitar.cost}тг</span>
-            <span className="errAmount">{guitar.amount === 0 ? err : unerr}</span>
+            <span className="errAmount">{guitar.amount === 0 ? 'Нет в наличии' : ''}</span>
             <div className="buttons">
               <BasketBtn guitar={guitar} />
               <FavoriteBtn guitar={guitar} />

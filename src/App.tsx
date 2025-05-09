@@ -2,7 +2,7 @@ import './App.css';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ROUTES } from './constants';
 import { Login, HomePage, CategoriesPage, Basket, FavoritesPage, CatalogPage, MyProductsPage } from './pages';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dashboard, RequireToken, SalerDashboard } from "./components";
 import Registration from './pages/registration/Registration';
 
@@ -11,15 +11,6 @@ function App() {
   const handleSetIsAuth = (token: string) => {
     setIsAuth(token);
   };
-
-  const [guitars, setGuitars] = useState([]);
-
-  useEffect(() => {
-    fetch('http://localhost:8080/api/guitars')
-      .then(res => res.json())
-      .then(data => setGuitars(data))
-      .catch(error => console.log(error));
-  }, []);
 
   return (
     <BrowserRouter>
@@ -35,7 +26,7 @@ function App() {
         >
           <Route path={ROUTES.HOME_PAGE} element={<HomePage />} />
           <Route path={ROUTES.CATALOG} element={<CatalogPage />} />
-          <Route path={ROUTES.CATEGORY} element={<CategoriesPage guitars={guitars} />} />
+          <Route path={ROUTES.CATEGORY} element={<CategoriesPage />} />
           <Route path={ROUTES.BASKET} element={<Basket />} />
           <Route path={ROUTES.FAVORITES} element={<FavoritesPage />} />
         </Route>
