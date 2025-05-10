@@ -5,13 +5,12 @@ import HomeIcon from '@mui/icons-material/Home';
 import Contacts from '@mui/icons-material/Contacts';
 import Favorite from '@mui/icons-material/Favorite';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
-import { Breadcrumbs, Title } from '../';
+import { Breadcrumbs, Title } from '../../';
 import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
 import { ROUTES } from 'src/constants';
-import { SidebarFooterProfile } from './FootDashboard/FootDasboard'; // Импортируем новый компонент
+import { SidebarFooterProfile } from './FootDashboard/FootDasboard'; 
 import { useEffect, useState } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
 import { removeToken } from 'src/hooks';
 
 // Навигация

@@ -1,10 +1,10 @@
 import { styled } from '@mui/material/styles';
 import { TextField, Select, MenuItem, SelectChangeEvent, InputBase } from '@mui/material';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, ReactNode } from 'react';
 import { theme } from 'src/theme';
 
 // Стили для текстового поля
-export const CustomTextFieldStyled = styled(TextField) ({
+export const CustomTextFieldStyled = styled(TextField)({
   '& .MuiInputLabel-root': {
     fontSize: '14px',
     color: theme.palette.grey[500],
@@ -22,10 +22,10 @@ export const CustomTextFieldStyled = styled(TextField) ({
   '& .MuiOutlinedInput-notchedOutline': {
     border: 0,
   },
-})
+});
 
 // Стили для выпадающего списка
-export const CustomSelectStyled = styled(Select) ({
+export const CustomSelectStyled = styled(Select)({
   fontSize: '14px',
   backgroundColor: theme.palette.secondary.main,
   borderRadius: '16px',
@@ -42,10 +42,10 @@ export const CustomSelectStyled = styled(Select) ({
   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
     border: 0,
   },
-})
+});
 
 // Стили для поля выбора файла
-export const CustomFileInputStyled = styled(InputBase) ({
+export const CustomFileInputStyled = styled(InputBase)({
   backgroundColor: theme.palette.secondary.main,
   borderRadius: '16px',
   padding: '12px',
@@ -61,7 +61,7 @@ export const CustomFileInputStyled = styled(InputBase) ({
   '& .MuiInputBase-input': {
     cursor: 'pointer',
   },
-})
+});
 
 interface CustomTextFieldProps {
   label: string;
@@ -118,8 +118,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   multiple = false,
   fullWidth = true,
 }) => {
-  const handleChange = (event: SelectChangeEvent<string | string[]>) => {
-    onChange(event.target.value as string | string[]);
+  const handleChange = (event: SelectChangeEvent<unknown>, child: ReactNode) => {
+    const newValue = event.target.value as string | string[];
+    onChange(newValue);
   };
 
   return (
@@ -130,16 +131,17 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       multiple={multiple}
       fullWidth={fullWidth}
       size="small"
-      renderValue={(selected: string | string[]) => {
-        if (!selected || (Array.isArray(selected) && selected.length === 0)) {
+      renderValue={(selected: unknown): ReactNode => {
+        const selectedValue = selected as string | string[];
+        if (!selectedValue || (Array.isArray(selectedValue) && selectedValue.length === 0)) {
           return <em style={{ color: theme.palette.grey[500], fontSize: '14px' }}>{label}</em>;
         }
-        if (Array.isArray(selected)) {
-          return selected
+        if (Array.isArray(selectedValue)) {
+          return selectedValue
             .map((val) => options.find((opt) => opt.value === val)?.label || val)
             .join(', ');
         }
-        return options.find((opt) => opt.value === selected)?.label || selected;
+        return options.find((opt) => opt.value === selectedValue)?.label || selectedValue;
       }}
     >
       {!multiple && <MenuItem value="" disabled><em>{label}</em></MenuItem>}

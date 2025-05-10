@@ -166,8 +166,8 @@ export const MyProductsPage = () => {
       let response: AxiosResponse<Guitar>;
       if (editingGuitar) {
         response = await axios.put(`http://localhost:8080/guitars/${editingGuitar._id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         setGuitars((prev) =>
           prev.map((g) => (g._id === editingGuitar._id ? response.data : g))
         );

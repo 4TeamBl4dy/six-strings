@@ -4,7 +4,7 @@ import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import StoreIcon from '@mui/icons-material/Store';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import { Breadcrumbs, Title } from '../';
+import { Breadcrumbs, Title } from '../../';
 import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
 import { ROUTES } from 'src/constants';
