@@ -4,9 +4,7 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Typography } from '@mui/material';
-import {theme} from '../../theme'
-import {handleImageError} from '../../utils'
+import {handleImageError} from 'src/utils'
 
 // Тип для объекта в избранном
 interface FavoriteItem {

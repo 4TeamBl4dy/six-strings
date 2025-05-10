@@ -2,12 +2,12 @@ import './styles.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { setToken, fetchToken } from '../../hooks'; 
-import Logo from '../../../public/icons/logo.png';
+import { setToken, fetchToken } from 'src/hooks'; 
+import Logo from '/public/icons/logo.png';
 import { Box, Typography, InputAdornment } from '@mui/material';
-import { ROUTES } from '../../constants';
-import { StyledCheckbox } from '../../components/styledComponents';
-import { Field } from '../../components';
+import { ROUTES } from 'src/constants';
+import { StyledCheckbox } from 'src/components/styledComponents';
+import { Field } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 

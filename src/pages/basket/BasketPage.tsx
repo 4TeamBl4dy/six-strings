@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {handleImageError} from '../../utils'
+import {handleImageError} from 'src/utils'
 
 interface BasketItem {
   guitarId: string;

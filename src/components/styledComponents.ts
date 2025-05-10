@@ -1,5 +1,5 @@
 import { styled } from "@mui/system";
-import { theme } from "../theme";
+import { theme } from "src/theme";
 import Checkbox from "@mui/material/Checkbox";
 
 export const StyledCheckbox = styled(Checkbox)({

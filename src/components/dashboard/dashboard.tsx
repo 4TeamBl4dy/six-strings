@@ -7,12 +7,12 @@ import Favorite from '@mui/icons-material/Favorite';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
 import { Breadcrumbs, Title } from '../';
 import { demoTheme } from './styles';
-import Logo from '../../../public/icons/smallLogo.png';
-import { ROUTES } from '../../constants';
+import Logo from '/public/icons/smallLogo.png';
+import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard'; // Импортируем новый компонент
 import { useEffect, useState } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { removeToken } from '../../hooks';
+import { removeToken } from 'src/hooks';
 
 // Навигация
 const NAVIGATION: Navigation = [

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Breadcrumbs as MuiBreadcrumbs, Typography } from '@mui/material';
-import { ROUTES } from '../../constants';
+import { ROUTES } from 'src/constants';
 import Box from '@mui/material/Box';
 
 interface BreadcrumbRoute {

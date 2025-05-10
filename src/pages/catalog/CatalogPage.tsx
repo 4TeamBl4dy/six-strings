@@ -2,10 +2,10 @@ import './styles.css';
 import { useState, ChangeEvent, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { Typography } from '@mui/material';
-import {theme} from '../../theme'
-import {handleImageError} from '../../utils'
+import {theme} from 'src/theme'
+import {handleImageError} from 'src/utils'
 
-import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
+import { BasketBtn, FavoriteBtn, ModalWindow } from 'src/components';
 
 interface Guitar {
   _id: string;

@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { fetchToken } from "../../hooks";
-import { ROUTES } from "../../constants";
+import { fetchToken } from "src/hooks";
+import { ROUTES } from "src/constants";
 import React, { useEffect, useState } from "react";
 
 export function RequireToken({ children }: { children: React.ReactNode }) {

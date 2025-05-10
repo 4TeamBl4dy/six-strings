@@ -1,6 +1,26 @@
-import './styles.css';
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
+import axios, { AxiosResponse } from 'axios';
+import {
+  StyledContainer,
+  PageTitle,
+  ToolbarWrapper,
+  AddButton,
+  ProductsGrid,
+  GuitarCard,
+  GuitarCardMedia,
+  GuitarCardContent,
+  ActionButton,
+  StyledModal,
+  ModalContent,
+  ModalHeader,
+  CloseButton,
+  ModalButton,
+  ModalButtonWrapper,
+  ErrorAlert,
+} from './styles';
+import { Typography, Grid, Box } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { CustomTextField, CustomSelect, CustomFileInput } from 'src/components';
 
 interface Guitar {
   _id: string;
@@ -21,32 +41,43 @@ interface Guitar {
 export const MyProductsPage = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingGuitar, setEditingGuitar] = useState<Guitar | null>(null);
 
   const [img, setImage] = useState<File | null>(null);
-  const [name, setName] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [cost, setCost] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [type, setType] = useState<string>('');
-  const [brand, setBrand] = useState<string>('');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [cost, setCost] = useState('');
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState('');
+  const [brand, setBrand] = useState('');
 
-  const [editingGuitarId, setEditingGuitarId] = useState<string | null>(null);
-  const [editedGuitarImg, setEditedGuitarImg] = useState<{ [key: string]: File | null }>({});
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchName, setSearchName] = useState('');
+  const [filterTypes, setFilterTypes] = useState<string[]>([]);
+  const [filterBrands, setFilterBrands] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<string[]>([]);
 
   const sellerLogin = localStorage.getItem('login') || '';
   const userName = localStorage.getItem('userName') || '';
   const userPhone = localStorage.getItem('userPhone') || '';
 
+  const categories = [
+    { value: 'electric', label: 'Электрические гитары' },
+    { value: 'acoustic', label: 'Акустические гитары' },
+    { value: 'classic', label: 'Классические гитары' },
+    { value: 'bass', label: 'Бас-гитары' },
+    { value: 'combo', label: 'Комбоусилители' },
+    { value: 'accessories', label: 'Аксессуары' },
+  ];
+
+  // Загрузка товаров продавца
   useEffect(() => {
     const fetchGuitars = async () => {
       try {
         const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        console.log('Полученные гитары:', response.data); 
-        const sellerGuitars = response.data.filter(guitar => guitar.seller?.login === sellerLogin);
+        const sellerGuitars = response.data.filter((guitar) => guitar.seller?.login === sellerLogin);
         setGuitars(sellerGuitars || []);
       } catch (error) {
-        console.error('Ошибка при загрузке гитар:', error);
         setError('Не удалось загрузить товары.');
       }
     };
@@ -55,84 +86,72 @@ export const MyProductsPage = () => {
     }
   }, [sellerLogin]);
 
-  const imageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
+  // Получение уникальных типов и брендов для фильтров
+  const uniqueTypes = Array.from(new Set(guitars.map((g) => g.type))).map((value) => ({
+    value,
+    label: categories.find((cat) => cat.value === value)?.label || value,
+  }));
+  const uniqueBrands = Array.from(new Set(guitars.map((g) => g.brand))).map((brand) => ({
+    value: brand,
+    label: brand,
+  }));
+
+  // Сброс формы
+  const resetForm = useCallback(() => {
+    setImage(null);
+    setName('');
+    setDescription('');
+    setCost('');
+    setAmount('');
+    setType('');
+    setBrand('');
+    setError(null);
+    setEditingGuitar(null);
+  }, []);
+
+  // Обработка изменения изображения
+  const handleImageChange = useCallback((file: File | null) => {
     setImage(file);
-  };
+  }, []);
 
-  const imageChangeId = (event: ChangeEvent<HTMLInputElement>, guitarId: string) => {
-    const file = event.target.files?.[0] || null;
-    setEditedGuitarImg((prevImages) => ({
-      ...prevImages,
-      [guitarId]: file,
-    }));
-  };
+  // Открытие модального окна для добавления
+  const handleOpenModal = useCallback(() => {
+    resetForm();
+    setModalOpen(true);
+  }, [resetForm]);
 
-  const createGuitar = async (e: FormEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (!name || !img || !description || !cost || !amount || !type || !brand || !sellerLogin) {
-      setError('Пропущено поле. Повторите ввод.');
+  // Открытие модального окна для редактирования
+  const handleEditGuitar = useCallback((guitar: Guitar) => {
+    setEditingGuitar(guitar);
+    setName(guitar.name);
+    setDescription(guitar.description);
+    setCost(String(guitar.cost));
+    setAmount(String(guitar.amount));
+    setType(guitar.type);
+    setBrand(guitar.brand);
+    setImage(null);
+    setModalOpen(true);
+  }, []);
+
+  // Закрытие модального окна
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false);
+    resetForm();
+  }, [resetForm]);
+
+  // Создание или обновление товара
+  const handleSubmit = useCallback(async () => {
+    if (!name || (!img && !editingGuitar) || !description || !cost || !amount || !type || !brand) {
+      setError('Заполните все поля.');
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append('img', img);
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('cost', cost);
-      formData.append('amount', amount);
-      formData.append('type', type);
-      formData.append('brand', brand);
-      formData.append('sellerLogin', sellerLogin);
-      formData.append('userName', userName);
-      formData.append('userPhone', userPhone);
-
-      console.log('Отправка данных для создания:', [...formData.entries()]); // Для отладки
-      const response: AxiosResponse<Guitar> = await axios.post('http://localhost:8080/guitars', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setGuitars((prev) => [...prev, response.data]);
-      resetForm();
-    } catch (error) {
-      console.error('Ошибка при добавлении гитары:', error);
-      setError('Не удалось добавить товар.');
-      resetForm();
-    }
-  };
-
-  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const filteredGuitars = guitars.filter((guitar) =>
-    guitar.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const editGuitar = (guitarId: string) => {
-    const guitar = guitars.find((g) => g._id === guitarId);
-    if (guitar) {
-      setEditingGuitarId(guitarId);
-      setImage(null);
-      setName(guitar.name);
-      setDescription(guitar.description);
-      setCost(String(guitar.cost));
-      setAmount(String(guitar.amount));
-      setType(guitar.type);
-      setBrand(guitar.brand);
-    }
-  };
-
-  const updateGuitar = async (guitarId: string) => {
-    try {
-      const formData = new FormData();
-      if (editedGuitarImg[guitarId]) {
-        formData.append('img', editedGuitarImg[guitarId]!);
-      } else {
-        formData.append('img', guitars.find((g) => g._id === guitarId)!.img); // Передаем текущий URL
+      if (img) {
+        formData.append('img', img);
+      } else if (editingGuitar) {
+        formData.append('img', editingGuitar.img);
       }
       formData.append('name', name);
       formData.append('description', description);
@@ -144,168 +163,190 @@ export const MyProductsPage = () => {
       formData.append('userName', userName);
       formData.append('userPhone', userPhone);
 
-      console.log('Отправка данных для обновления:', [...formData.entries()]); // Для отладки
-      const response: AxiosResponse<Guitar> = await axios.put(`http://localhost:8080/guitars/${guitarId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      let response: AxiosResponse<Guitar>;
+      if (editingGuitar) {
+        response = await axios.put(`http://localhost:8080/guitars/${editingGuitar._id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
+        setGuitars((prev) =>
+          prev.map((g) => (g._id === editingGuitar._id ? response.data : g))
+        );
+      } else {
+        response = await axios.post('http://localhost:8080/guitars', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setGuitars((prev) => [...prev, response.data]);
+      }
 
-      setGuitars((prev) =>
-        prev.map((guitar) => (guitar._id === guitarId ? response.data : guitar))
-      );
-      resetForm();
+      handleCloseModal();
     } catch (error) {
-      console.error('Ошибка при обновлении гитары:', error);
-      setError('Не удалось обновить товар.');
+      setError('Не удалось сохранить товар.');
     }
-  };
+  }, [img, name, description, cost, amount, type, brand, editingGuitar, sellerLogin, userName, userPhone, handleCloseModal]);
 
-  const resetForm = () => {
-    setImage(null);
-    setName('');
-    setDescription('');
-    setCost('');
-    setAmount('');
-    setType('');
-    setBrand('');
-    setEditingGuitarId(null);
-    setEditedGuitarImg({});
-    setError(null);
-  };
-
-  const deleteGuitar = async (guitarId: string) => {
+  // Удаление товара
+  const handleDeleteGuitar = useCallback(async (guitarId: string) => {
     try {
       await axios.delete(`http://localhost:8080/guitars/${guitarId}`);
-      setGuitars((prev) => prev.filter((guitar) => guitar._id !== guitarId));
+      setGuitars((prev) => prev.filter((g) => g._id !== guitarId));
     } catch (error) {
-      console.error('Ошибка при удалении гитары:', error);
       setError('Не удалось удалить товар.');
     }
-  };
+  }, []);
+
+  // Фильтрация и сортировка товаров
+  const filteredGuitars = guitars
+    .filter((guitar) =>
+      guitar.name.toLowerCase().includes(searchName.toLowerCase()) &&
+      (filterTypes.length ? filterTypes.includes(guitar.type) : true) &&
+      (filterBrands.length ? filterBrands.includes(guitar.brand) : true)
+    )
+    .sort((a, b) => {
+      for (const sort of sortBy) {
+        switch (sort) {
+          case 'nameAsc':
+            return a.name.localeCompare(b.name);
+          case 'nameDesc':
+            return b.name.localeCompare(a.name);
+          case 'priceAsc':
+            return a.cost - b.cost;
+          case 'priceDesc':
+            return b.cost - a.cost;
+        }
+      }
+      return 0;
+    });
 
   return (
-    <div className="Menu">
-      <div className="addGuitar">
-        <h1>Добавить товар</h1>
-        <div className="addGuitar-form">
-          <input className="changeImage" type="file" onChange={imageChange} accept="image/*" />
-          <input
+    <StyledContainer maxWidth="xl">
+      <PageTitle variant="h5">Мои товары</PageTitle>
+
+      {/* Панель инструментов */}
+      <ToolbarWrapper>
+        <CustomTextField
+          label="Поиск по названию"
+          value={searchName}
+          onChange={(value: string) => setSearchName(value)}
+        />
+        <CustomSelect
+          label="Фильтр по типам"
+          value={filterTypes}
+          onChange={(value: string | string[]) => setFilterTypes(value as string[])}
+          options={categories}
+          multiple
+        />
+        <CustomSelect
+          label="Фильтр по брендам"
+          value={filterBrands}
+          onChange={(value: string | string[]) => setFilterBrands(value as string[])}
+          options={uniqueBrands}
+          multiple
+        />
+        <CustomSelect
+          label="Сортировка"
+          value={sortBy}
+          onChange={(value: string | string[]) => setSortBy(value as string[])}
+          options={[
+            { value: 'nameAsc', label: 'Название (А-Я)' },
+            { value: 'nameDesc', label: 'Название (Я-А)' },
+            { value: 'priceAsc', label: 'Цена (возрастание)' },
+            { value: 'priceDesc', label: 'Цена (убывание)' },
+          ]}
+          multiple
+        />
+        <AddButton onClick={handleOpenModal}>Добавить товар</AddButton>
+      </ToolbarWrapper>
+
+      {/* Карточки товаров */}
+      <ProductsGrid container>
+        {filteredGuitars.map((guitar) => (
+          <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={2}>
+            <GuitarCard>
+              <GuitarCardMedia image={guitar.img} />
+              <GuitarCardContent>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                    {guitar.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Тип: {categories.find((cat) => cat.value === guitar.type)?.label || guitar.type}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Бренд: {guitar.brand}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {guitar.cost}тг
+                  </Typography>
+                  {guitar.amount === 0 && (
+                    <Typography variant="body2" color="error.main">
+                      Нет в наличии
+                    </Typography>
+                  )}
+                </Box>
+                <Box display="flex" gap={1} mt={1}>
+                  <ActionButton onClick={() => handleEditGuitar(guitar)}>Изменить</ActionButton>
+                  <ActionButton onClick={() => handleDeleteGuitar(guitar._id)}>Удалить</ActionButton>
+                </Box>
+              </GuitarCardContent>
+            </GuitarCard>
+          </Grid>
+        ))}
+      </ProductsGrid>
+
+      {/* Модальное окно для добавления/редактирования */}
+      <StyledModal open={modalOpen} onClose={handleCloseModal}>
+        <ModalContent>
+          <ModalHeader>
+            <PageTitle variant="h6">{editingGuitar ? 'Редактировать товар' : 'Добавить товар'}</PageTitle>
+            <CloseButton onClick={handleCloseModal}>
+              <CloseIcon fontSize="small" />
+            </CloseButton>
+          </ModalHeader>
+          {error && <ErrorAlert severity="error">{error}</ErrorAlert>}
+          <CustomFileInput onChange={handleImageChange} />
+          <CustomTextField
+            label="Название"
             value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-            placeholder="Название"
+            onChange={(value: string) => setName(value)}
           />
-          <input
+          <CustomTextField
+            label="Описание"
             value={description}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
-            placeholder="Описание"
+            onChange={(value: string) => setDescription(value)}
+            multiline
+            rows={3}
           />
-          <input
+          <CustomTextField
+            label="Цена"
             value={cost}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setCost(e.target.value)}
-            placeholder="Цена"
+            onChange={(value: string) => setCost(value)}
+            type="number"
           />
-          <input
+          <CustomTextField
+            label="Количество"
             value={amount}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
-            placeholder="Количество"
+            onChange={(value: string) => setAmount(value)}
+            type="number"
           />
-          <input
+          <CustomSelect
+            label="Тип"
             value={type}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setType(e.target.value)}
-            placeholder="Тип"
+            onChange={(value: string | string[]) => setType(value as string)}
+            options={categories}
           />
-          <input
+          <CustomTextField
+            label="Бренд"
             value={brand}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setBrand(e.target.value)}
-            placeholder="Бренд"
+            onChange={(value: string) => setBrand(value)}
           />
-          {error && <nav className="error">{error}</nav>}
-          <button onClick={createGuitar}>Добавить</button>
-        </div>
-      </div>
-
-      <div className="infoChange">
-        <h1 className="infoGuitars">Информация о товарах</h1>
-        <div className="searchAdmin">
-          <label htmlFor="search">Поиск по названию:</label>
-          <input
-            type="text"
-            id="search"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            placeholder="Введите название"
-          />
-        </div>
-
-        <div className="cards">
-          {filteredGuitars.map((guitar) => (
-            <div className="adminCard" key={guitar._id}>
-              {editingGuitarId === guitar._id ? (
-                <div>
-                  <input
-                    type="file"
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => imageChangeId(e, guitar._id)}
-                    accept="image/*"
-                  />
-                  <img
-                    src={
-                      editedGuitarImg[guitar._id]
-                        ? URL.createObjectURL(editedGuitarImg[guitar._id]!)
-                        : guitar.img // Используем URL из R2
-                    }
-                    alt={guitar.name}
-                  />
-                  <input
-                    value={name}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                    placeholder="Название"
-                  />
-                  <input
-                    value={description}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
-                    placeholder="Описание"
-                  />
-                  <input
-                    value={cost}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCost(e.target.value)}
-                    placeholder="Цена"
-                  />
-                  <input
-                    value={amount}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
-                    placeholder="Количество"
-                  />
-                  <input
-                    value={type}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setType(e.target.value)}
-                    placeholder="Тип"
-                  />
-                  <input
-                    value={brand}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setBrand(e.target.value)}
-                    placeholder="Бренд"
-                  />
-                  <button onClick={() => updateGuitar(guitar._id)}>Сохранить</button>
-                  <button onClick={resetForm}>Отменить</button>
-                </div>
-              ) : (
-                <div>
-                  <img src={guitar.img} alt={guitar.name} /> 
-                  <nav>Название: {guitar.name}</nav>
-                  <nav>Описание: {guitar.description}</nav>
-                  <nav>Цена: {guitar.cost}</nav>
-                  <nav>Количество на складе: {guitar.amount}</nav>
-                  <nav>Тип товара: {guitar.type}</nav>
-                  <nav>Название бренда: {guitar.brand}</nav>
-                  <button onClick={() => editGuitar(guitar._id)}>Изменить</button>
-                  <button onClick={() => deleteGuitar(guitar._id)}>Удалить</button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+          <ModalButtonWrapper>
+            <ModalButton onClick={handleSubmit}>
+              {editingGuitar ? 'Сохранить' : 'Добавить'}
+            </ModalButton>
+            <ModalButton onClick={handleCloseModal}>Отменить</ModalButton>
+          </ModalButtonWrapper>
+        </ModalContent>
+      </StyledModal>
+    </StyledContainer>
   );
 };

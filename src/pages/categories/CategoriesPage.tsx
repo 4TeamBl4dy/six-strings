@@ -3,9 +3,9 @@ import { useState, useEffect, ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Typography } from '@mui/material';
-import { theme } from '../../theme';
-import { handleImageError } from '../../utils';
-import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
+import { theme } from 'src/theme';
+import { handleImageError } from 'src/utils';
+import { BasketBtn, FavoriteBtn, ModalWindow } from 'src/components';
 
 interface Guitar {
   _id: string;

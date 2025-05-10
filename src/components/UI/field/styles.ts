@@ -1,6 +1,6 @@
 import { styled } from '@mui/system'
 import TextField from "@mui/material/TextField";
-import {theme} from "../../theme";
+import {theme} from "src/theme";
 
 export const DataField = styled(TextField)({
   '& .MuiInputLabel-root': {

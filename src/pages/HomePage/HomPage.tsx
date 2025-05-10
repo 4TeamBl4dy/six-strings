@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { BasketBtn, FavoriteBtn, ModalWindow } from '../../components';
-import { handleImageError } from '../../utils';
+import { BasketBtn, FavoriteBtn, ModalWindow } from 'src/components';
+import { handleImageError } from 'src/utils';
 import {
   StyledContainer,
   SliderSection,

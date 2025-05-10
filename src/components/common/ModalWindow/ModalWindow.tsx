@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Box, Typography, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import './styles.css'
-import {theme} from '../../theme'
+import {theme} from 'src/theme'
 
 // Тип для объекта гитары
 interface Guitar {

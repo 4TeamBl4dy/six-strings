@@ -6,12 +6,12 @@ import StoreIcon from '@mui/icons-material/Store';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import { Breadcrumbs, Title } from '../';
 import { demoTheme } from './styles';
-import Logo from '../../../public/icons/smallLogo.png';
-import { ROUTES } from '../../constants';
+import Logo from '/public/icons/smallLogo.png';
+import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
 import { useEffect, useState } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { removeToken } from '../../hooks';
+import { removeToken } from 'src/hooks';
 
 // Навигация для продавца
 const NAVIGATION: Navigation = [
