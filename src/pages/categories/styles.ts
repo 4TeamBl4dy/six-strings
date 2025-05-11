@@ -59,8 +59,8 @@ export const ProductsGrid = styled(Grid)(({ theme }) => ({
 }));
 
 export const GuitarCard = styled(Card)(({ theme }) => ({
-  minWidth: theme.breakpoints.down('sm') ? '160px' : '200px',
-  maxWidth: '180px',
+  minWidth: theme.breakpoints.down('sm') ? '180px' : '220px',
+  maxWidth: '220px',
   flexShrink: 0,
   marginTop: theme.spacing(1),
   marginBottom: theme.spacing(3),

@@ -224,11 +224,13 @@ export const MyProductsPage = () => {
       {/* Панель инструментов */}
       <ToolbarWrapper>
         <CustomTextField
+          sx={{width: 220}}
           label="Поиск по названию"
           value={searchName}
           onChange={(value: string) => setSearchName(value)}
         />
         <CustomSelect
+          sx={{width: 220}}
           label="Фильтр по типам"
           value={filterTypes}
           onChange={(value: string | string[]) => setFilterTypes(value as string[])}
@@ -236,6 +238,7 @@ export const MyProductsPage = () => {
           multiple
         />
         <CustomSelect
+          sx={{width: 220}}
           label="Фильтр по брендам"
           value={filterBrands}
           onChange={(value: string | string[]) => setFilterBrands(value as string[])}
@@ -243,6 +246,7 @@ export const MyProductsPage = () => {
           multiple
         />
         <CustomSelect
+          sx={{width: 220}}
           label="Сортировка"
           value={sortBy}
           onChange={(value: string | string[]) => setSortBy(value as string[])}

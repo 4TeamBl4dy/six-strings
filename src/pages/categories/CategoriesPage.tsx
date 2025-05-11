@@ -1,11 +1,16 @@
-import './styles.css';
 import { useState, useEffect, ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { Typography } from '@mui/material';
-import { theme } from 'src/theme';
-import { handleImageError } from 'src/utils';
-import { BasketBtn, FavoriteBtn, ModalWindow } from 'src/components';
+import { Typography, Grid, Box } from '@mui/material';
+import {
+  StyledContainer,
+  ToolbarWrapper,
+  ProductsGrid,
+  GuitarCard,
+  GuitarCardMedia,
+  GuitarCardContent,
+} from './styles';
+import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
 
 interface Guitar {
   _id: string;
@@ -26,8 +31,9 @@ interface Guitar {
 export const CategoriesPage = () => {
   const { category } = useParams<{ category: string }>();
   const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [sortBy, setSortBy] = useState<'default' | 'ascending' | 'descending'>('default');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterBrands, setFilterBrands] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,81 +55,115 @@ export const CategoriesPage = () => {
     fetchGuitars();
   }, []);
 
-  const handleSortChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(event.target.value as 'default' | 'ascending' | 'descending');
-  };
-
-  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
+  const uniqueBrands = Array.from(new Set(guitars.map((g) => g.brand || ''))).map((brand) => ({
+    value: brand,
+    label: brand,
+  }));
 
   const sortAndFilterGuitars = (guitars: Guitar[]): Guitar[] => {
     let filteredGuitars = guitars.filter((guitar) => guitar.type.toLowerCase() === category?.toLowerCase());
 
     if (searchTerm) {
       filteredGuitars = filteredGuitars.filter((guitar) =>
-        guitar.name.toLowerCase().includes(searchTerm.toLowerCase())
+        guitar.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        guitar.seller.login.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    switch (sortBy) {
-      case 'ascending':
-        return [...filteredGuitars].sort((a, b) => a.cost - b.cost);
-      case 'descending':
-        return [...filteredGuitars].sort((a, b) => b.cost - a.cost);
-      default:
-        return filteredGuitars;
-    }
+    filteredGuitars = filteredGuitars.filter((guitar) =>
+      filterBrands.length && guitar.brand ? filterBrands.includes(guitar.brand) : true
+    );
+
+    return filteredGuitars.sort((a, b) => {
+      for (const sort of sortBy) {
+        switch (sort) {
+          case 'nameAsc':
+            return a.name.localeCompare(b.name);
+          case 'nameDesc':
+            return b.name.localeCompare(a.name);
+          case 'priceAsc':
+            return a.cost - b.cost;
+          case 'priceDesc':
+            return b.cost - a.cost;
+        }
+      }
+      return 0;
+    });
   };
 
   const sortedAndFilteredGuitars = sortAndFilterGuitars(guitars);
 
   if (loading) return <div>Загрузка...</div>;
-  if (error) return <div>{error}</div>;
+  if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (
-    <div className="Page">
-      <h2>{categoryTitle}</h2>
-      <div className="sort-cost">
-        <label htmlFor="sort">Сортировка по цене:</label>
-        <select id="sort" value={sortBy} onChange={handleSortChange}>
-          <option value="default">По умолчанию</option>
-          <option value="ascending">По возрастанию</option>
-          <option value="descending">По убыванию</option>
-        </select>
-      </div>
-      <div className="searchGuitar">
-        <label htmlFor="search">Поиск по названию:</label>
-        <input
-          type="text"
-          id="search"
+    <StyledContainer maxWidth="xl">
+      <Title size="h4" text={categoryTitle} />
+      <ToolbarWrapper>
+        <CustomTextField
+          sx={{ width: 220 }}
+          label="Поиск по названию или логину продавца"
           value={searchTerm}
-          onChange={handleSearchChange}
-          placeholder="Введите название"
+          onChange={(value: string) => setSearchTerm(value)}
         />
-      </div>
-      <ul className="categories">
-        {sortedAndFilteredGuitars.map((guitar) => (
-          <div key={guitar._id} className="guitar">
-            <img
-              src={guitar.img}
-              alt={guitar.name}
-              onError={handleImageError}
-            />
-            <nav>
-              <b>{guitar.name}</b>
-            </nav>
-            <Typography sx={{ color: theme.palette.primary.main }}>{guitar.seller.login}</Typography>
-            <span>{guitar.cost}тг</span>
-            <span className="errAmount">{guitar.amount === 0 ? 'Нет в наличии' : ''}</span>
-            <div className="buttons">
-              <BasketBtn guitar={guitar} />
-              <FavoriteBtn guitar={guitar} />
-              <ModalWindow guitar={guitar} />
-            </div>
-          </div>
-        ))}
-      </ul>
-    </div>
+        <CustomSelect
+          sx={{ width: 220 }}
+          label="Фильтр по брендам"
+          value={filterBrands}
+          onChange={(value: string | string[]) => setFilterBrands(value as string[])}
+          options={uniqueBrands}
+          multiple
+        />
+        <CustomSelect
+          sx={{ width: 220 }}
+          label="Сортировка"
+          value={sortBy}
+          onChange={(value: string | string[]) => setSortBy(value as string[])}
+          options={[
+            { value: 'nameAsc', label: 'Название (А-Я)' },
+            { value: 'nameDesc', label: 'Название (Я-А)' },
+            { value: 'priceAsc', label: 'Цена (возрастание)' },
+            { value: 'priceDesc', label: 'Цена (убывание)' },
+          ]}
+          multiple
+        />
+      </ToolbarWrapper>
+      <ProductsGrid container>
+        {sortedAndFilteredGuitars.length === 0 ? (
+          <div>Товары не найдены</div>
+        ) : (
+          sortedAndFilteredGuitars.map((guitar) => (
+            <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3}>
+              <GuitarCard>
+                <GuitarCardMedia image={guitar.img} />
+                <GuitarCardContent>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                      {guitar.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {guitar.seller.login}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {guitar.cost}тг
+                    </Typography>
+                    {guitar.amount === 0 && (
+                      <Typography variant="body2" color="error.main">
+                        Нет в наличии
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box display="flex" mt={1}>
+                    <BasketBtn guitar={guitar} />
+                    <FavoriteBtn guitar={guitar} />
+                    <ModalWindow guitar={guitar} />
+                  </Box>
+                </GuitarCardContent>
+              </GuitarCard>
+            </Grid>
+          ))
+        )}
+      </ProductsGrid>
+    </StyledContainer>
   );
 };

@@ -1,10 +1,18 @@
-import './styles.css';
 import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Typography, Grid, Box } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {handleImageError} from 'src/utils'
+import { handleImageError } from 'src/utils';
+import {
+  StyledContainer,
+  ProductsGrid,
+  GuitarCard,
+  GuitarCardMedia,
+  GuitarCardContent,
+  ActionButton,
+} from './styles';
 
 // Тип для объекта в избранном
 interface FavoriteItem {
@@ -19,7 +27,7 @@ export const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const token = localStorage.getItem('access_token'); // Исправляем ключ
+  const token = localStorage.getItem('access_token');
   const navigate = useNavigate();
 
   const fetchFavorites = useCallback(() => {
@@ -113,57 +121,62 @@ export const FavoritesPage = () => {
   };
 
   return (
-    <div className="Favorites">
-      <h2>ИЗБРАННОЕ</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+    <StyledContainer maxWidth="xl">
+      <Typography variant="h5" sx={{ fontWeight: 600, textAlign: 'center', color: '#FF6428', mb: 2 }}>
+        ИЗБРАННОЕ
+      </Typography>
+      {error && <div style={{ color: 'red', marginBottom: '10px', textAlign: 'center' }}>{error}</div>}
       {favorites.length === 0 && !error ? (
-        <div>Избранное пусто</div>
+        <div style={{ textAlign: 'center' }}>Избранное пусто</div>
       ) : (
         <>
-          <button className="deleteAll" onClick={removeAll}>
-            Удалить всё
-          </button>
-          <div className="favoritesList">
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <ActionButton onClick={removeAll}>Удалить всё</ActionButton>
+          </Box>
+          <ProductsGrid container>
             {favorites.map((guitar) => (
-              <div key={guitar.guitarId} className="guitar">
-                <img 
-                  className="basketImg"
-                  src={guitar.guitarImg} 
-                  alt={guitar.guitarName} 
-                  onError={handleImageError} 
-                />                                
-                <nav>
-                  <b>{guitar.guitarName}</b>
-                </nav>
-                <span>{guitar.guitarCost}тг</span>
-                <div className="buttons">
-                  <button
-                    className="basketBtn"
-                    onClick={() =>
-                      addCart(
-                        guitar.guitarId,
-                        guitar.guitarImg,
-                        guitar.guitarName,
-                        guitar.guitarCost,
-                        guitar.guitarAmount
-                      )
-                    }
-                  >
-                    <AddShoppingCartIcon />
-                  </button>
-                  <button
-                    className="favoriteBtn"
-                    style={{ width: '35px', height: '35px' }}
-                    onClick={() => removeFavorite(guitar.guitarId)}
-                  >
-                    <DeleteIcon sx={{ width: '35px', height: '35px' }} />
-                  </button>
-                </div>
-              </div>
+              <Grid item key={guitar.guitarId} xs={12} sm={6} md={4} lg={3}>
+                <GuitarCard>
+                  <GuitarCardMedia image={guitar.guitarImg} onError={handleImageError} />
+                  <GuitarCardContent>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                        {guitar.guitarName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {guitar.guitarCost}тг
+                      </Typography>
+                      {guitar.guitarAmount === 0 && (
+                        <Typography variant="body2" color="error.main">
+                          Нет в наличии
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box display="flex" gap={1} mt={1}>
+                      <ActionButton
+                        onClick={() =>
+                          addCart(
+                            guitar.guitarId,
+                            guitar.guitarImg,
+                            guitar.guitarName,
+                            guitar.guitarCost,
+                            guitar.guitarAmount
+                          )
+                        }
+                      >
+                        <AddShoppingCartIcon />
+                      </ActionButton>
+                      <ActionButton onClick={() => removeFavorite(guitar.guitarId)}>
+                        <DeleteIcon />
+                      </ActionButton>
+                    </Box>
+                  </GuitarCardContent>
+                </GuitarCard>
+              </Grid>
             ))}
-          </div>
+          </ProductsGrid>
         </>
       )}
-    </div>
+    </StyledContainer>
   );
-}
+};

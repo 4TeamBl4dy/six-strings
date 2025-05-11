@@ -71,6 +71,7 @@ interface CustomTextFieldProps {
   multiline?: boolean;
   rows?: number;
   type?: string;
+  sx?: React.CSSProperties
 }
 
 export const CustomTextField: React.FC<CustomTextFieldProps> = ({
@@ -81,9 +82,11 @@ export const CustomTextField: React.FC<CustomTextFieldProps> = ({
   multiline = false,
   rows,
   type,
+  sx
 }) => {
   return (
     <CustomTextFieldStyled
+      sx={sx}
       label={label}
       value={value}
       onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
@@ -108,6 +111,7 @@ interface CustomSelectProps {
   options: Option[];
   multiple?: boolean;
   fullWidth?: boolean;
+  sx?: React.CSSProperties
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -117,6 +121,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   multiple = false,
   fullWidth = true,
+  sx
 }) => {
   const handleChange = (event: SelectChangeEvent<unknown>, child: ReactNode) => {
     const newValue = event.target.value as string | string[];
@@ -125,6 +130,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   return (
     <CustomSelectStyled
+      sx={sx}
       value={value}
       onChange={handleChange}
       displayEmpty
@@ -146,7 +152,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     >
       {!multiple && <MenuItem value="" disabled><em>{label}</em></MenuItem>}
       {options.map((option) => (
-        <MenuItem key={option.value} value={option.value}>
+        <MenuItem sx={sx} key={option.value} value={option.value}>
           {option.label}
         </MenuItem>
       ))}
