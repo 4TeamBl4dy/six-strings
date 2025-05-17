@@ -28,16 +28,23 @@ router.post('/basket', authenticateToken, async (req, res) => {
   const { guitarId, guitarImg, guitarName, guitarAmount, guitarCost } = req.body;
   const guitarCount = 1;
   const userId = req.userId;
+  const date = new Date(); 
 
   try {
     const { client, db } = await connectToDb();
     const users = db.collection('Users');
     const basketCopy = db.collection('Basket');
+
     await users.updateOne(
       { _id: new ObjectId(userId) },
-      { $push: { basket: { guitarId, guitarImg, guitarName, guitarAmount, guitarCost, guitarCount } } }
+      { $push: { basket: { guitarId, guitarImg, guitarName, guitarAmount, guitarCost, guitarCount, date } } }
     );
-    await basketCopy.insertOne({ user_id: userId, guitar_id: guitarId });
+
+    await basketCopy.insertOne({
+      user_id: userId,
+      guitar_id: guitarId,
+      date
+    });
 
     client.close();
     res.json({ message: 'Товар успешно добавлен в корзину' });
@@ -46,6 +53,7 @@ router.post('/basket', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 router.put('/basket/:guitarId', authenticateToken, async (req, res) => {
   const guitarId = req.params.guitarId;

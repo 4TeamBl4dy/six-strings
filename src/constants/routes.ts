@@ -7,6 +7,8 @@ const BASKET = '/basket';
 const FAVORITES = '/favorites';
 const SALER_PAGE = '/saler';
 const MY_PRODUCTS = '/my_products';
+const PRODUCTS = '/products'
+const STATS = '/stats'
 
 export const ROUTES = {
   HOME_PAGE,
@@ -18,4 +20,6 @@ export const ROUTES = {
   FAVORITES,
   SALER_PAGE,
   MY_PRODUCTS,
+  PRODUCTS,
+  STATS
 };

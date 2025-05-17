@@ -16,6 +16,8 @@ const breadcrumbRoutes: BreadcrumbRoute[] = [
   { path: ROUTES.BASKET, name: 'Корзина' },
   { path: ROUTES.FAVORITES, name: 'Избранное' },
   { path: ROUTES.MY_PRODUCTS, name: 'Мои товары' },
+  { path: ROUTES.PRODUCTS, name: 'Товары других продавцов' },
+  { path: ROUTES.STATS, name: 'Статистика' },
 ];
 
 export const Breadcrumbs: React.FC = () => {

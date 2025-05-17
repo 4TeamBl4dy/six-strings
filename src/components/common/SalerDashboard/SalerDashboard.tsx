@@ -21,12 +21,12 @@ const NAVIGATION: Navigation = [
     icon: <InventoryIcon />,
   },
   {
-    segment: 'other-products',
+    segment: '/saler/products',
     title: 'Товары других продавцов',
     icon: <StoreIcon />,
   },
   {
-    segment: 'statistics',
+    segment: '/saler/stats',
     title: 'Статистика',
     icon: <BarChartIcon />,
   },

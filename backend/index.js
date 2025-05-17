@@ -8,6 +8,7 @@ const salerRoutes = require('./routes/salerRoutes');
 const basketRoutes = require('./routes/basketRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
 const guitarsRoutes = require('./routes/guitarsRoutes');
+const statsRoutes = require('./routes/statsRoutes')
 
 const app = express();
 const port = 8080;
@@ -22,5 +23,6 @@ app.use(salerRoutes);
 app.use(basketRoutes);
 app.use(favoritesRoutes);
 app.use(guitarsRoutes);
+app.use(statsRoutes)
 
 app.listen(port, () => console.log(`Server running at http://localhost:${port}`));

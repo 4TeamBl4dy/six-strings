@@ -1,7 +1,7 @@
 import './App.css';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ROUTES } from './constants';
-import { Login, HomePage, CategoriesPage, Basket, FavoritesPage, CatalogPage, MyProductsPage } from './pages';
+import { Login, HomePage, CategoriesPage, Basket, FavoritesPage, CatalogPage, MyProductsPage, StatsPage, ProductsPage } from './pages';
 import { useState } from 'react';
 import { Dashboard, RequireToken, SalerDashboard } from "./components";
 import Registration from './pages/registration/Registration';
@@ -38,6 +38,8 @@ function App() {
           }
         >
           <Route path={ROUTES.MY_PRODUCTS} element={<MyProductsPage />} />
+          <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
+          <Route path={ROUTES.STATS} element={<StatsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

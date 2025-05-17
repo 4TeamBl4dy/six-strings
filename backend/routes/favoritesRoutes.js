@@ -27,6 +27,7 @@ router.get('/favorites', authenticateToken, async (req, res) => {
 router.post('/favorites', authenticateToken, async (req, res) => {
   const { guitarId, guitarImg, guitarName, guitarAmount, guitarCost } = req.body;
   const userId = req.userId;
+  const date = new Date(); 
 
   try {
     const { client, db } = await connectToDb();
@@ -34,10 +35,10 @@ router.post('/favorites', authenticateToken, async (req, res) => {
     const favoritesCopy = db.collection('Favorites');
     await users.updateOne(
       { _id: new ObjectId(userId) },
-      { $push: { favorites: { guitarId, guitarImg, guitarName, guitarAmount, guitarCost } } }
+      { $push: { favorites: { guitarId, guitarImg, guitarName, guitarAmount, guitarCost, date } } }
     );
 
-    await favoritesCopy.insertOne({ user_id: userId, guitar_id: guitarId });
+    await favoritesCopy.insertOne({ user_id: userId, guitar_id: guitarId, date });
 
     client.close();
     res.json({ message: 'Товар успешно добавлен в избранное' });
