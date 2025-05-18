@@ -144,7 +144,7 @@ export const FavoritesPage = () => {
                         {guitar.guitarName}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {guitar.guitarCost}тг
+                        {guitar.guitarCost}₸
                       </Typography>
                       {guitar.guitarAmount === 0 && (
                         <Typography variant="body2" color="error.main">

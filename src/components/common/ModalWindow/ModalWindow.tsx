@@ -67,7 +67,7 @@ export const ModalWindow = ({ guitar }: ModalWindowProps) => {
           </button>
           <img
             className="ModalImg"
-            src={`/items_pictures/${guitar.img}.png`}
+            src={guitar.img}
             alt={guitar.name}
           />
           <Box className="ModalInfo">

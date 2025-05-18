@@ -1,9 +1,14 @@
-import './styles.css';
 import { useState, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {handleImageError} from 'src/utils'
+import { handleImageError } from 'src/utils';
+import {BasketContainer, BasketTitle, DeleteAllButton, GuitarItem, GuitarImage, CountButton, CountText, DeleteButton, BasketFooter, BuyButton, GuitarName } from './styles'
+import {
+  Box,
+  Typography,
+} from '@mui/material';
+import { PaymentModalWrapper } from 'src/components';
 
 interface BasketItem {
   guitarId: string;
@@ -20,7 +25,7 @@ export const Basket = () => {
   const [sum, setSum] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
-  const token = localStorage.getItem('access_token'); // Исправляем ключ
+  const token = localStorage.getItem('access_token');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,7 +45,6 @@ export const Basket = () => {
         setSum(data.reduce((total, guitar) => total + guitar.guitarCost * guitar.guitarCount, 0));
       })
       .catch((error: AxiosError) => {
-        console.error('Ошибка при загрузке корзины:', error);
         if (error.response?.status === 401) {
           setError('Невалидный токен. Пожалуйста, войдите снова.');
           navigate('/login');
@@ -52,74 +56,49 @@ export const Basket = () => {
       });
   }, [navigate, token]);
 
+  const updateBasket = () => {
+    axios
+      .get('http://localhost:8080/basket', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response: AxiosResponse<BasketItem[]>) => {
+        setBasket(response.data);
+        setSum(response.data.reduce((total, guitar) => total + guitar.guitarCost * guitar.guitarCount, 0));
+      });
+  };
+
   const countPlus = (guitarId: string) => {
-    const guitar = basket.find((guitar) => guitar.guitarId === guitarId);
+    const guitar = basket.find((g) => g.guitarId === guitarId);
     if (!guitar) return;
 
     if ((count[guitarId] || guitar.guitarCount) < guitar.guitarAmount) {
-      const newCount = (count[guitarId] || guitar.guitarCount) + 1;
-      setCount({ ...count, [guitarId]: newCount });
+      setCount({ ...count, [guitarId]: (count[guitarId] || guitar.guitarCount) + 1 });
       setSum(sum + guitar.guitarCost);
+
       axios
-        .put(
-          `http://localhost:8080/basket/${guitarId}`,
-          { action: 'plus' },
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        .then((response: AxiosResponse) => {
-          console.log(response.data);
-          // Обновляем корзину без перезагрузки страницы
-          axios
-            .get('http://localhost:8080/basket', {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((response: AxiosResponse<BasketItem[]>) => {
-              setBasket(response.data);
-              setSum(
-                response.data.reduce((total, guitar) => total + guitar.guitarCost * guitar.guitarCount, 0)
-              );
-            });
+        .put(`http://localhost:8080/basket/${guitarId}`, { action: 'plus' }, {
+          headers: { Authorization: `Bearer ${token}` },
         })
-        .catch((error: AxiosError) => {
-          console.error('Ошибка при увеличении количества:', error);
-          setError('Ошибка при увеличении количества товара.');
-        });
+        .then(updateBasket)
+        .catch(() => setError('Ошибка при увеличении количества товара.'));
     }
   };
 
   const countMinus = (guitarId: string) => {
-    const guitar = basket.find((guitar) => guitar.guitarId === guitarId);
+    const guitar = basket.find((g) => g.guitarId === guitarId);
     if (!guitar) return;
 
     const currentCount = count[guitarId] || guitar.guitarCount;
     if (currentCount > 1) {
-      const newCount = currentCount - 1;
-      setCount({ ...count, [guitarId]: newCount });
+      setCount({ ...count, [guitarId]: currentCount - 1 });
       setSum(sum - guitar.guitarCost);
+
       axios
-        .put(
-          `http://localhost:8080/basket/${guitarId}`,
-          { action: 'minus' },
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        .then((response: AxiosResponse) => {
-          console.log(response.data);
-          // Обновляем корзину без перезагрузки страницы
-          axios
-            .get('http://localhost:8080/basket', {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((response: AxiosResponse<BasketItem[]>) => {
-              setBasket(response.data);
-              setSum(
-                response.data.reduce((total, guitar) => total + guitar.guitarCost * guitar.guitarCount, 0)
-              );
-            });
+        .put(`http://localhost:8080/basket/${guitarId}`, { action: 'minus' }, {
+          headers: { Authorization: `Bearer ${token}` },
         })
-        .catch((error: AxiosError) => {
-          console.error('Ошибка при уменьшении количества:', error);
-          setError('Ошибка при уменьшении количества товара.');
-        });
+        .then(updateBasket)
+        .catch(() => setError('Ошибка при уменьшении количества товара.'));
     }
   };
 
@@ -131,16 +110,10 @@ export const Basket = () => {
         Authorization: `Bearer ${token}`,
         'X-HTTP-Method-Override': 'DELETE',
       },
-      data: { guitarId: guitarId },
+      data: { guitarId },
     })
-      .then((response: AxiosResponse) => {
-        setBasket(basket.filter((guitar) => guitar.guitarId !== guitarId));
-        setSum(basket.reduce((total, guitar) => total + guitar.guitarCost * guitar.guitarCount, 0));
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при удалении товара из корзины:', error);
-        setError('Ошибка при удалении товара из корзины.');
-      });
+      .then(updateBasket)
+      .catch(() => setError('Ошибка при удалении товара из корзины.'));
   };
 
   const removeAll = () => {
@@ -148,67 +121,64 @@ export const Basket = () => {
       .patch('http://localhost:8080/basket/delete', null, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then((response: AxiosResponse) => {
-        console.log(response.data);
+      .then(() => {
         setBasket([]);
         setSum(0);
       })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при удалении всех товаров из корзины:', error);
-        setError('Ошибка при удалении всех товаров из корзины.');
-      });
+      .catch(() => setError('Ошибка при удалении всех товаров из корзины.'));
   };
 
-  const goToPay = () => {
-    navigate('/оплата');
+  const [openPayment, setOpenPayment] = useState(false);
+
+  const handlePaymentSuccess = async () => {
+    try {
+      await axios.post('http://localhost:8080/basket/confirm', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      navigate('/');
+    } catch {
+      setError('Ошибка при подтверждении покупки');
+    }
   };
 
   return (
-    <div className="Basket">
-      <h2 className="Basket-title">КОРЗИНА</h2>
-      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+    <BasketContainer>
+      <BasketTitle variant="h4">КОРЗИНА</BasketTitle>
+      {error && <Typography color="error">{error}</Typography>}
       {basket.length === 0 && !error ? (
-        <div>Корзина пуста</div>
+        <Typography>Корзина пуста</Typography>
       ) : (
         <>
-          <button className="deleteAll" onClick={removeAll}>
-            Удалить всё
-          </button>
+          <DeleteAllButton onClick={removeAll}>Удалить всё</DeleteAllButton>
           {basket.map((guitar) => (
-            <div key={guitar.guitarId} className="guitarBasket">
-              <img 
-                className="basketImg"
-                src={guitar.guitarImg} 
-                alt={guitar.guitarName} 
-                onError={handleImageError} 
-              />
-              <h3>{guitar.guitarName}</h3>
-              <button onClick={() => countPlus(guitar.guitarId)} className="changeCount">
-                +
-              </button>
-              <nav className="count">{count[guitar.guitarId] || guitar.guitarCount}шт</nav>
-              <button onClick={() => countMinus(guitar.guitarId)} className="changeCount">
-                -
-              </button>
-              <span>{guitar.guitarCost}тг</span>
-              <button
-                id="deleteBtn"
-                className="favoriteBtn"
-                style={{ width: '30px', height: '30px' }}
-                onClick={() => removeBasket(guitar.guitarId)}
-              >
-                <DeleteIcon sx={{ width: '30px', height: '30px' }} />
-              </button>
-            </div>
+            <GuitarItem key={guitar.guitarId}>
+              <GuitarImage src={guitar.guitarImg} alt={guitar.guitarName} onError={handleImageError} />
+              <GuitarName variant="h6">{guitar.guitarName}</GuitarName>
+              <Box display="flex" alignItems="center">
+                <CountButton onClick={() => countPlus(guitar.guitarId)}>+</CountButton>
+                <CountText>{count[guitar.guitarId] || guitar.guitarCount} шт</CountText>
+                <CountButton onClick={() => countMinus(guitar.guitarId)}>-</CountButton>
+              </Box>
+              <Typography>{guitar.guitarCost} ₸</Typography>
+              <DeleteButton onClick={() => removeBasket(guitar.guitarId)}>
+                <DeleteIcon sx={{ width: 30, height: 30 }} />
+              </DeleteButton>
+            </GuitarItem>
           ))}
-          <div className="basket-end">
-            <nav>
-              Итого: <span>{sum}тг</span>
-            </nav>
-            <button onClick={goToPay}>Купить</button>
-          </div>
+          <BasketFooter>
+            <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
+              Итого: <strong>{sum} ₸</strong>
+            </Typography>
+            <BuyButton onClick={() => setOpenPayment(true)}>Купить</BuyButton>
+            <PaymentModalWrapper
+              open={openPayment}
+              onClose={() => setOpenPayment(false)}
+              amount={sum}
+              onSuccess={handlePaymentSuccess}
+            />
+          </BasketFooter>
         </>
       )}
-    </div>
+    </BasketContainer>
   );
 };

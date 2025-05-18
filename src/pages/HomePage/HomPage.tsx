@@ -40,6 +40,7 @@ interface Guitar {
   brand: string;
   type: string;
   description: string;
+  popularity: number; // Новое поле для популярности
   seller: {
     login: string;
     name: string;
@@ -47,43 +48,27 @@ interface Guitar {
   };
 }
 
-const getRandomItems = <T,>(array: T[], count: number): T[] => {
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
-};
-
 export const HomePage = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [randomGuitars, setRandomGuitars] = useState<Guitar[]>([]);
   const [activePage, setActivePage] = useState(0);
   const [cardsPerPage, setCardsPerPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Загрузка данных о гитарах с сервера
+  // Загрузка данных о популярных гитарах с сервера
   useEffect(() => {
-    fetch('http://localhost:8080/guitars')
+    fetch('http://localhost:8080/guitars/popular')
       .then((res) => {
         if (!res.ok) {
           throw new Error('Ошибка загрузки данных');
         }
         return res.json();
       })
-      .then((data: Guitar[]) => setGuitars(data))
+      .then((data: Guitar[]) => {
+        setGuitars(data); // Уже отсортированные по популярности
+      })
       .catch((error: unknown) => console.error(error));
   }, []);
-
-  // Выбор случайных гитар и сброс на первую страницу
-  useEffect(() => {
-    if (guitars.length > 0) {
-      const selectedGuitars = getRandomItems(guitars, 15);
-      setRandomGuitars(selectedGuitars);
-      setActivePage(0); // Сбрасываем на первую страницу
-      if (carouselRef.current) {
-        carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' }); // Прокручиваем к началу
-      }
-    }
-  }, [guitars]);
 
   // Расчёт количества карточек на страницу (максимум 5) и общего числа страниц
   useEffect(() => {
@@ -93,10 +78,10 @@ export const HomePage = () => {
         const cardWidth = 200 + 16; // maxWidth (200px) + margin (2 * 8px)
         const newCardsPerPage = Math.max(1, Math.min(5, Math.floor(containerWidth / cardWidth)));
         setCardsPerPage(newCardsPerPage);
-        setTotalPages(Math.ceil(randomGuitars.length / newCardsPerPage));
-        setActivePage((prev) => Math.min(prev, Math.ceil(randomGuitars.length / newCardsPerPage) - 1));
+        setTotalPages(Math.ceil(guitars.length / newCardsPerPage));
+        setActivePage((prev) => Math.min(prev, Math.ceil(guitars.length / newCardsPerPage) - 1));
         if (activePage === 0 && carouselRef.current) {
-          carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' }); // Убедимся, что первая страница активна
+          carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
         }
       }
     };
@@ -104,7 +89,7 @@ export const HomePage = () => {
     updateCarousel();
     window.addEventListener('resize', updateCarousel);
     return () => window.removeEventListener('resize', updateCarousel);
-  }, [randomGuitars.length, activePage]);
+  }, [guitars.length, activePage]);
 
   // Функция для прокрутки к предыдущей странице
   const handlePrev = () => {
@@ -146,15 +131,15 @@ export const HomePage = () => {
     <StyledContainer maxWidth="xl">
       {/* Секция слайдера товаров */}
       <SliderSection>
-        <SliderTitle variant="h6">Подборка товаров</SliderTitle>
+        <SliderTitle variant="h6">Популярные товары</SliderTitle>
         <SliderWrapper>
           {/* Кнопка "Назад" */}
           <SliderButton onClick={handlePrev} disabled={activePage === 0}>
             ‹
           </SliderButton>
           {/* Контейнер слайдера */}
-          <CarouselContainer cardCount={randomGuitars.length} ref={carouselRef}>
-            {randomGuitars.map((guitar) => (
+          <CarouselContainer cardCount={guitars.length} ref={carouselRef}>
+            {guitars.map((guitar) => (
               <GuitarCard key={guitar._id}>
                 <GuitarCardMedia image={guitar.img} onError={handleImageError} />
                 <GuitarCardContent>
@@ -165,7 +150,7 @@ export const HomePage = () => {
                     {guitar.seller.login}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {guitar.cost}тг
+                    {guitar.cost}₸
                   </Typography>
                   {guitar.amount === 0 && (
                     <Typography variant="body2" color="error.main">

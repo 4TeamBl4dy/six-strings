@@ -168,7 +168,7 @@ export const ProductsPage: React.FC = () => {
                       {guitar.seller.login}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {guitar.cost} тг
+                      {guitar.cost} ₸
                     </Typography>
                     {guitar.amount === 0 && (
                       <Typography variant="body2" color="error.main">

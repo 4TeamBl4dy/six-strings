@@ -144,4 +144,44 @@ router.delete('/guitars/:id', async (req, res) => {
   }
 });
 
+router.get('/guitars/popular', async (req, res) => {
+  try {
+    const { client, db } = await connectToDb();
+    const guitars = db.collection('Guitars');
+    const favorites = db.collection('Favorites');
+
+    const allGuitars = await guitars.find({}).toArray();
+
+    // Считаем количество добавлений в избранное для каждой гитары
+    const favoriteCounts = await favorites.aggregate([
+      {
+        $group: {
+          _id: "$guitar_id",
+          count: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    const favoriteMap = favoriteCounts.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    // Добавляем поле popularity к каждой гитаре и сортируем
+    const guitarsWithPopularity = allGuitars.map(guitar => ({
+      ...guitar,
+      popularity: favoriteMap[guitar._id.toString()] || 0
+    })).sort((a, b) => b.popularity - a.popularity);
+
+    // Возвращаем первые 15 самых популярных
+    const topGuitars = guitarsWithPopularity.slice(0, 15);
+
+    client.close();
+    res.json(topGuitars);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

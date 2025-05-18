@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { connectToDb, ObjectId } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 router.get('/basket', authenticateToken, async (req, res) => {
   const userId = req.userId;
@@ -28,7 +29,7 @@ router.post('/basket', authenticateToken, async (req, res) => {
   const { guitarId, guitarImg, guitarName, guitarAmount, guitarCost } = req.body;
   const guitarCount = 1;
   const userId = req.userId;
-  const date = new Date(); 
+  const date = new Date();
 
   try {
     const { client, db } = await connectToDb();
@@ -53,7 +54,6 @@ router.post('/basket', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
 
 router.put('/basket/:guitarId', authenticateToken, async (req, res) => {
   const guitarId = req.params.guitarId;
@@ -165,6 +165,76 @@ router.patch('/basket/delete', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.post('/basket/confirm', authenticateToken, async (req, res) => {
+  const userId = req.userId; 
+
+  try {
+    const { client, db } = await connectToDb();
+    const users = db.collection('Users');
+    const guitars = db.collection('Guitars');
+    const basketCopy = db.collection('Basket');
+
+    // Получаем корзину пользователя
+    const user = await users.findOne({ _id: new ObjectId(userId) });
+    const basket = user.basket || [];
+
+    // Обновляем количество товаров
+    for (const item of basket) {
+      const guitarId = item.guitarId;
+      const guitarCount = item.guitarCount;
+
+      const guitar = await guitars.findOne({ _id: new ObjectId(guitarId) });
+      if (!guitar) {
+        client.close();
+        return res.status(404).json({ error: `Товар с ID ${guitarId} не найден` });
+      }
+
+      const newAmount = guitar.amount - guitarCount;
+      if (newAmount < 0) {
+        client.close();
+        return res.status(400).json({ error: `Недостаточно товара ${guitar.name} на складе` });
+      }
+
+      await guitars.updateOne(
+        { _id: new ObjectId(guitarId) },
+        { $set: { amount: newAmount } }
+      );
+    }
+
+    await users.updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { basket: [] } }
+    );
+
+    await basketCopy.deleteMany({ user_id: userId });
+
+    client.close();
+    return res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ success: false });
+  }
+});
+
+router.post('/pay', authenticateToken, async (req, res) => {
+  const { amount, paymentMethodId } = req.body;
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'kzt',
+      payment_method: paymentMethodId,
+      confirm: true,
+      payment_method_types: ['card'],
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
