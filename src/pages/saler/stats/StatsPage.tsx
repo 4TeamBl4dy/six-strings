@@ -85,7 +85,7 @@ export const StatsPage = () => {
     <Container maxWidth="lg" sx={{ mt: 1 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6" fontWeight="bold">
-          Статистика добавлений
+          Статистика по продажам и добавлений в избранное
         </Typography>
         <Button variant="contained" color="primary" onClick={handleExport}>
           Скачать в Excel
@@ -95,17 +95,17 @@ export const StatsPage = () => {
       <Card sx={{ mb: 4, boxShadow: 3, borderRadius: 3, p: 2, backgroundColor: '#fafafa' }}>
         <CardContent>
           <Typography variant="h6" fontSize="16px" gutterBottom>
-            Добавили в корзину
+            Продано товаров
           </Typography>
           <LineChart
             xAxis={[{ scaleType: 'point', data: basketData.map(item => item._id), label: 'Дата' }]}
             yAxis={[{
-              label: 'Количество человек',
+              label: 'Количество продаж',
               valueFormatter: (v: number) => Math.round(v).toString(),
               tickMinStep: 1,
               min: 0,
             }]}
-            series={[{ data: basketData.map(item => item.total), label: 'Корзина', color: '#FB8C00' }]}
+            series={[{ data: basketData.map(item => item.total), label: 'Продажи', color: '#FB8C00' }]}
             height={300}
           />
         </CardContent>

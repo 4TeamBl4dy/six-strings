@@ -113,14 +113,11 @@ router.post('/basket/delete', authenticateToken, async (req, res) => {
   try {
     const { client, db } = await connectToDb();
     const users = db.collection('Users');
-    const basketCopy = db.collection('Basket');
 
     await users.updateOne(
       { _id: new ObjectId(userId) },
       { $pull: { basket: { guitarId: guitarId } } }
     );
-
-    await basketCopy.deleteOne({ user_id: userId, guitar_id: guitarId });
 
     client.close();
     res.json({ message: 'Товар успешно удален из корзины' });
@@ -137,12 +134,9 @@ router.patch('/basket/delete', authenticateToken, async (req, res) => {
     const { client, db } = await connectToDb();
     const users = db.collection('Users');
     const guitars = db.collection('Guitars');
-    const basketCopy = db.collection('Basket');
 
     const user = await users.findOne({ _id: new ObjectId(userId) });
     const basket = user.basket;
-
-    await basketCopy.deleteMany({ user_id: userId });
 
     for (const item of basket) {
       const guitarId = item.guitarId;
@@ -208,8 +202,6 @@ router.post('/basket/confirm', authenticateToken, async (req, res) => {
       { _id: new ObjectId(userId) },
       { $set: { basket: [] } }
     );
-
-    await basketCopy.deleteMany({ user_id: userId });
 
     client.close();
     return res.json({ success: true });

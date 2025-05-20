@@ -18,7 +18,8 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY || '');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
 
 interface PaymentModalProps {
   open: boolean;
