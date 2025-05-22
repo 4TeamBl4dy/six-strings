@@ -9,8 +9,8 @@ import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
 import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
-import { useEffect, useState } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import { useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
 import { removeToken } from 'src/hooks';
 
 // Навигация для продавца
@@ -32,39 +32,41 @@ const NAVIGATION: Navigation = [
   },
 ];
 
-interface User {
-  name: string;
-  email: string;
+interface Saler {
+  login: string;
+  phone: string;
+  name?: string;
+  img?: string;
 }
 
 export const SalerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<User | null>(null);
+  const [saler, setSaler] = useState<Saler | null>(null);
 
-  // Получение данных продавца
-  useEffect(() => {
+  const fetchSalerData = useCallback(async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
       navigate('/login');
       return;
     }
 
-    axios
-      .get('http://localhost:8080/api/user', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response: AxiosResponse<User>) => {
-        setUser(response.data);
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при загрузке данных продавца:', error);
-        if (error.response?.status === 401) {
-          removeToken();
-          navigate('/login');
-        }
+    try {
+      const response = await axios.get('http://localhost:8080/saler', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      const { login, phone, name, img } = response.data;
+      setSaler({ login, phone, name, img });
+    } catch (error) {
+      console.error('Error fetching saler data:', error);
+    }
   }, [navigate]);
+
+  useEffect(() => {
+    fetchSalerData();
+  }, [fetchSalerData]);
 
   // Обработчик выхода
   const handleLogout = () => {
@@ -95,7 +97,7 @@ export const SalerDashboard = () => {
             </NavLink>
           ),
           sidebarFooter: () => (
-            <SidebarFooterProfile user={user} onLogout={handleLogout} />
+            <SidebarFooterProfile user={saler} onLogout={handleLogout} refreshUser={fetchSalerData} />
           ),
         }}
       >

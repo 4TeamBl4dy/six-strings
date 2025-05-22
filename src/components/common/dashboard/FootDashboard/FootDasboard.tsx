@@ -1,17 +1,40 @@
-import { Box, Avatar, Button, Typography } from '@mui/material';
-import LogoutIcon from '@mui/icons-material/Logout'; // Исправляем название иконки
+import { Box, Avatar, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from 'src/constants';
 
 interface User {
-  name: string;
-  email: string;
+  login: string;
+  phone: string;
+  name?: string;
+  img?: string;
 }
 
 interface SidebarFooterProfileProps {
   user: User | null;
   onLogout: () => void;
+  refreshUser: () => void;
 }
 
-export const SidebarFooterProfile = ({ user, onLogout }: SidebarFooterProfileProps) => {
+export const SidebarFooterProfile = ({ user, onLogout, refreshUser }: SidebarFooterProfileProps) => {
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEdit = () => {
+    navigate(ROUTES.PROFILE);
+    handleMenuClose();
+  };
+
   return (
     <Box
       sx={{
@@ -26,21 +49,40 @@ export const SidebarFooterProfile = ({ user, onLogout }: SidebarFooterProfilePro
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Avatar
           sx={{ bgcolor: '#FF6428' }}
-          alt={user?.name || 'User'}
-          src="/broken-image.jpg" // Можно заменить на реальное изображение пользователя
+          alt={user?.login || 'User'}
+          src={user?.img || '/broken-image.jpg'}
         >
-          {user?.name ? user.name[0] : 'U'}
+          {user?.login ? user.login[0] : 'U'}
         </Avatar>
-        <Typography variant="body1">{user?.name || 'Пользователь'}</Typography>
+        <Box>
+          <Typography variant="body1">{user?.login || 'Пользователь'}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user?.phone || 'Телефон не указан'}
+          </Typography>
+        </Box>
       </Box>
-      <Button
-        variant="contained"
-        startIcon={<LogoutIcon />}
-        onClick={onLogout}
-        sx={{ backgroundColor: '#FF6428', '&:hover': { backgroundColor: '#e55a22' } }}
+      <IconButton
+        onClick={handleMenuOpen}
+        sx={{ color: '#FF6428' }}
       >
-        Выйти
-      </Button>
+        <MenuIcon />
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleEdit}>Редактировать</MenuItem>
+        <MenuItem onClick={() => { onLogout(); handleMenuClose(); }}>Выйти</MenuItem>
+      </Menu>
     </Box>
   );
 };

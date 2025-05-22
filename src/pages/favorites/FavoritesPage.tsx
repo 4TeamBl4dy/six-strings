@@ -23,8 +23,18 @@ interface FavoriteItem {
   guitarAmount: number;
 }
 
+// Тип для элемента корзины
+interface BasketItem {
+  guitarId: string;
+  guitarImg: string;
+  guitarName: string;
+  guitarCost: number;
+  guitarAmount: number;
+}
+
 export const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [basket, setBasket] = useState<BasketItem[]>([]); // Состояние для корзины
   const [error, setError] = useState<string | null>(null);
 
   const token = localStorage.getItem('access_token');
@@ -57,12 +67,41 @@ export const FavoritesPage = () => {
       });
   }, [token, navigate]);
 
+  const fetchBasket = useCallback(() => {
+    if (!token) return;
+
+    axios
+      .get('http://localhost:8080/basket', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response: AxiosResponse<BasketItem[]>) => {
+        setBasket(response.data || []);
+      })
+      .catch((error: AxiosError) => {
+        console.error('Ошибка при загрузке корзины:', error);
+      });
+  }, [token]);
+
   useEffect(() => {
     fetchFavorites();
-  }, [fetchFavorites]);
+    fetchBasket();
+  }, [fetchFavorites, fetchBasket]);
 
   const addCart = useCallback(
     (guitarId: string, guitarImg: string, guitarName: string, guitarCost: number, guitarAmount: number) => {
+      // Проверяем, есть ли товар уже в корзине
+      const isAlreadyInBasket = basket.some((item) => item.guitarId === guitarId);
+      if (isAlreadyInBasket) {
+        setError('Этот товар уже есть в вашей корзине.');
+        return;
+      }
+
+      // Проверяем наличие товара
+      if (guitarAmount === 0) {
+        setError('Товара нет в наличии.');
+        return;
+      }
+
       axios
         .post(
           'http://localhost:8080/basket',
@@ -77,13 +116,17 @@ export const FavoritesPage = () => {
         )
         .then((response: AxiosResponse) => {
           console.log('Товар успешно добавлен в корзину:', response.data);
+          setBasket((prev) => [
+            ...prev,
+            { guitarId, guitarImg, guitarName, guitarCost, guitarAmount },
+          ]); // Обновляем состояние корзины
         })
         .catch((error: AxiosError) => {
           console.error('Ошибка при добавлении в корзину:', error);
           setError('Ошибка при добавлении товара в корзину.');
         });
     },
-    [token]
+    [token, basket]
   );
 
   const removeFavorite = (guitarId: string) => {
@@ -134,46 +177,54 @@ export const FavoritesPage = () => {
             <ActionButton onClick={removeAll}>Удалить всё</ActionButton>
           </Box>
           <ProductsGrid container>
-            {favorites.map((guitar) => (
-              <Grid item key={guitar.guitarId} xs={12} sm={6} md={4} lg={3}>
-                <GuitarCard>
-                  <GuitarCardMedia image={guitar.guitarImg} onError={handleImageError} />
-                  <GuitarCardContent>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                        {guitar.guitarName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {guitar.guitarCost}₸
-                      </Typography>
-                      {guitar.guitarAmount === 0 && (
-                        <Typography variant="body2" color="error.main">
-                          Нет в наличии
+            {favorites.map((guitar) => {
+              const isInBasket = basket.some((item) => item.guitarId === guitar.guitarId);
+              return (
+                <Grid item key={guitar.guitarId} xs={12} sm={6} md={4} lg={3}>
+                  <GuitarCard>
+                    <GuitarCardMedia image={guitar.guitarImg} onError={handleImageError} />
+                    <GuitarCardContent>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                          {guitar.guitarName}
                         </Typography>
-                      )}
-                    </Box>
-                    <Box display="flex" gap={1} mt={1}>
-                      <ActionButton
-                        onClick={() =>
-                          addCart(
-                            guitar.guitarId,
-                            guitar.guitarImg,
-                            guitar.guitarName,
-                            guitar.guitarCost,
-                            guitar.guitarAmount
-                          )
-                        }
-                      >
-                        <AddShoppingCartIcon />
-                      </ActionButton>
-                      <ActionButton onClick={() => removeFavorite(guitar.guitarId)}>
-                        <DeleteIcon />
-                      </ActionButton>
-                    </Box>
-                  </GuitarCardContent>
-                </GuitarCard>
-              </Grid>
-            ))}
+                        <Typography variant="body2" color="text.secondary">
+                          {guitar.guitarCost}₸
+                        </Typography>
+                        {guitar.guitarAmount === 0 && (
+                          <Typography variant="body2" color="error.main">
+                            Нет в наличии
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box display="flex" gap={1} mt={1}>
+                        <ActionButton
+                          onClick={() =>
+                            addCart(
+                              guitar.guitarId,
+                              guitar.guitarImg,
+                              guitar.guitarName,
+                              guitar.guitarCost,
+                              guitar.guitarAmount
+                            )
+                          }
+                          disabled={guitar.guitarAmount === 0 || isInBasket} // Отключаем кнопку, если товара нет в наличии или он уже в корзине
+                          sx={{
+                            cursor: guitar.guitarAmount === 0 || isInBasket ? 'not-allowed' : 'pointer',
+                            opacity: guitar.guitarAmount === 0 || isInBasket ? 0.5 : 1,
+                          }}
+                        >
+                          <AddShoppingCartIcon />
+                        </ActionButton>
+                        <ActionButton onClick={() => removeFavorite(guitar.guitarId)}>
+                          <DeleteIcon />
+                        </ActionButton>
+                      </Box>
+                    </GuitarCardContent>
+                  </GuitarCard>
+                </Grid>
+              );
+            })}
           </ProductsGrid>
         </>
       )}

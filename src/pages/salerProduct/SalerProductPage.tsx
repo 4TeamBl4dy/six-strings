@@ -1,7 +1,7 @@
-import { useState, ChangeEvent, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { Typography, Grid, Box } from '@mui/material';
-import { Link } from 'react-router-dom'; // Импортируем Link для навигации
+import { Typography, Grid, Box, Avatar, Link } from '@mui/material';
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -12,7 +12,8 @@ import {
 } from './styles';
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
 import { theme } from 'src/theme';
-import { ROUTES } from 'src/constants'; // Импортируем ROUTES
+import { ROUTES } from 'src/constants';
+import {normalizePhoneNumber} from 'src/utils'
 
 interface Guitar {
   _id: string;
@@ -27,11 +28,25 @@ interface Guitar {
     login: string;
     name: string;
     phone: string;
+    img?: string;
   };
 }
 
-export const CatalogPage = () => {
+interface Seller {
+  login: string;
+  name: string;
+  phone: string;
+  img?: string;
+}
+
+export const SalerProductsPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const sellerLogin = queryParams.get('seller');
+
   const [guitars, setGuitars] = useState<Guitar[]>([]);
+  const [seller, setSeller] = useState<Seller | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
@@ -42,19 +57,31 @@ export const CatalogPage = () => {
   const err = 'Нет в наличии';
 
   useEffect(() => {
-    setLoading(true);
-    axios
-      .get('http://localhost:8080/guitars')
-      .then((response: AxiosResponse<Guitar[]>) => {
-        setGuitars(response.data || []);
+    if (!sellerLogin) {
+      navigate(ROUTES.CATALOG);
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const sellerResponse = await axios.get(`http://localhost:8080/saler_info?login=${sellerLogin}`);
+        setSeller(sellerResponse.data);
+
+        const guitarsResponse: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
+        const allGuitars = guitarsResponse.data || [];
+        const sellerGuitars = allGuitars.filter((guitar) => guitar.seller.login === sellerLogin);
+        setGuitars(sellerGuitars);
         setLoading(false);
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при загрузке товаров:', error);
-        setError('Не удалось загрузить каталог. Попробуйте позже.');
+      } catch (error) {
+        console.error('Ошибка при загрузке данных:', error);
+        setError('Не удалось загрузить данные. Попробуйте позже.');
         setLoading(false);
-      });
-  }, []);
+      }
+    };
+
+    fetchData();
+  }, [sellerLogin, navigate]);
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
@@ -79,8 +106,7 @@ export const CatalogPage = () => {
 
     if (searchTerm) {
       filteredGuitars = filteredGuitars.filter((guitar) =>
-        guitar.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        guitar.seller.login.toLowerCase().includes(searchTerm.toLowerCase())
+        guitar.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -119,13 +145,46 @@ export const CatalogPage = () => {
     return <div style={{ color: 'red' }}>{error}</div>;
   }
 
+  if (!seller) {
+    return <div>Продавец не найден.</div>;
+  }
+
+  // Нормализуем номер телефона перед созданием ссылки
+  const normalizedPhone = normalizePhoneNumber(seller.phone);
+  const whatsappLink = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent('Здравствуйте! Я пишу Вам с онлайн площадки SixStrings, ')}`;
+
   return (
     <StyledContainer maxWidth="xl">
-      <Title size={'h4'} text={'Каталог'} />
+      {/* Шапка с данными продавца */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <Avatar
+          src={seller.img || '/broken-image.jpg'}
+          sx={{ width: 60, height: 60, bgcolor: '#FF6428', mr: 2 }}
+        >
+          {seller.login[0]}
+        </Avatar>
+        <Box>
+          <Typography fontSize={'16px'}>{seller.login}</Typography>
+          <Typography fontSize={'14px'}>{seller.name}</Typography>
+          <Typography
+            fontSize={'14px'}
+            component={Link}
+            href={whatsappLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ color: theme.palette.primary.main, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+            onError={() => console.error('Ошибка при открытии WhatsApp: неверный номер телефона')}
+          >
+            {seller.phone}
+          </Typography>
+        </Box>
+      </Box>
+
+      <Title size={'h5'} text={`Товары продавца ${seller.login}`} sx={{ marginBottom: 2 }} />
       <ToolbarWrapper>
         <CustomTextField
           sx={{ width: 220 }}
-          label="Поиск по названию или логину продавца"
+          label="Поиск по названию"
           value={searchTerm}
           onChange={(value: string) => setSearchTerm(value)}
         />
@@ -172,13 +231,7 @@ export const CatalogPage = () => {
                     <Typography variant="subtitle1" fontWeight="bold" noWrap>
                       {guitar.name}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      color={theme.palette.primary.main}
-                      component={Link}
-                      to={`${ROUTES.SALER_PRODUCTS}?seller=${guitar.seller.login}`} 
-                      sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                    >
+                    <Typography variant="body2" color={theme.palette.primary.main}>
                       {guitar.seller.login}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">

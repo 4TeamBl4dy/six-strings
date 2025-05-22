@@ -1,5 +1,5 @@
 import { useState, useEffect, ChangeEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Typography, Grid, Box } from '@mui/material';
 import {
@@ -11,6 +11,7 @@ import {
   GuitarCardContent,
 } from './styles';
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
+import {ROUTES} from 'src/constants'
 
 interface Guitar {
   _id: string;
@@ -141,7 +142,12 @@ export const CategoriesPage = () => {
                     <Typography variant="subtitle1" fontWeight="bold" noWrap>
                       {guitar.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography 
+                      variant="body2" 
+                      color="primary.main"
+                      component={Link}
+                      to={`${ROUTES.SALER_PRODUCTS}?seller=${guitar.seller.login}`} 
+                    >
                       {guitar.seller.login}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">

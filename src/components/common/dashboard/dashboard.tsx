@@ -10,8 +10,9 @@ import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
 import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard'; 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { removeToken } from 'src/hooks';
+import axios from 'axios';
 
 // Навигация
 const NAVIGATION: Navigation = [
@@ -38,8 +39,10 @@ const NAVIGATION: Navigation = [
 ];
 
 interface User {
-  name: string;
-  email: string;
+  login: string;
+  phone: string;
+  name?: string;
+  img?: string;
 }
 
 export const Dashboard = () => {
@@ -47,15 +50,31 @@ export const Dashboard = () => {
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
 
-  // Получение данных пользователя
-  useEffect(() => {
+  const fetchUserData = useCallback(async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
       navigate('/login');
       return;
     }
 
+    try {
+      const response = await axios.get('http://localhost:8080/user', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const { login, phone, name, img } = response.data;
+      setUser({ login, phone, name, img });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      removeToken();
+      navigate('/login');
+    }
   }, [navigate]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   // Обработчик выхода
   const handleLogout = () => {
@@ -79,13 +98,13 @@ export const Dashboard = () => {
               <img
                 src={Logo}
                 alt="Logo"
-                style={{ height: '40px', width: 'auto' }} // Настройте размер по необходимости
+                style={{ height: '40px', width: 'auto' }}
               />
               <Title size={'h3'} text={'SixStrings'} sx={{ paddingTop: 1, color: '#FF6428' }} />
             </NavLink>
           ),
           sidebarFooter: () => (
-            <SidebarFooterProfile user={user} onLogout={handleLogout} />
+            <SidebarFooterProfile user={user} onLogout={handleLogout} refreshUser={fetchUserData} />
           ),
         }}
       >

@@ -29,7 +29,10 @@ import {
   FooterSubtitle,
   FooterDescription,
 } from './styles';
-import { Typography, Box, Grid } from '@mui/material';
+import { Typography, Box, Grid, Container } from '@mui/material';
+import {ROUTES} from 'src/constants'
+import { Link } from 'react-router-dom';
+import {Loader} from 'src/components'
 
 interface Guitar {
   _id: string;
@@ -54,9 +57,11 @@ export const HomePage = () => {
   const [cardsPerPage, setCardsPerPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Загрузка данных о популярных гитарах с сервера
   useEffect(() => {
+    setLoading(true);
     fetch('http://localhost:8080/guitars/popular')
       .then((res) => {
         if (!res.ok) {
@@ -66,6 +71,7 @@ export const HomePage = () => {
       })
       .then((data: Guitar[]) => {
         setGuitars(data); // Уже отсортированные по популярности
+        setLoading(false);
       })
       .catch((error: unknown) => console.error(error));
   }, []);
@@ -127,6 +133,14 @@ export const HomePage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
+
   return (
     <StyledContainer maxWidth="xl">
       {/* Секция слайдера товаров */}
@@ -146,7 +160,12 @@ export const HomePage = () => {
                   <Typography variant="subtitle1" fontWeight="bold" noWrap>
                     {guitar.name}
                   </Typography>
-                  <Typography variant="body2" color="primary.main">
+                  <Typography 
+                    variant="body2" 
+                    color="primary.main"
+                    component={Link}
+                    to={`${ROUTES.SALER_PRODUCTS}?seller=${guitar.seller.login}`} 
+                  >
                     {guitar.seller.login}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -231,7 +250,7 @@ export const HomePage = () => {
             {
               img: '/icons/comp2.png',
               title: 'Простая доставка',
-              desc: 'Достаточно просто ввести свой адрес.',
+              desc: 'Доставку для вас заказывает продавец через популярные сервисы доставки.',
             },
             {
               img: '/icons/comp3.png',

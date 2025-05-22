@@ -1,4 +1,5 @@
-import '../styles.css'
+import { useState, useEffect } from 'react';
+import '../styles.css';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
@@ -11,13 +12,51 @@ interface Guitar {
   cost: number;
 }
 
+// Тип для элемента избранного
+interface FavoriteItem {
+  _id: string;
+  guitarId: string;
+  guitarImg: string;
+  guitarName: string;
+  guitarAmount: number;
+  guitarCost: number;
+}
+
 // Тип для пропсов компонента
 interface FavoriteBtnProps {
   guitar: Guitar;
 }
 
 export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
+  const [isInFavorites, setIsInFavorites] = useState<boolean>(false); // Состояние для отслеживания наличия в избранном
+
+  // Получаем данные избранного при монтировании компонента
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      try {
+        const response: AxiosResponse<FavoriteItem[]> = await axios.get('http://localhost:8080/favorites', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const favoriteItems = response.data || [];
+        const isAlreadyInFavorites = favoriteItems.some((item) => item.guitarId === guitar._id);
+        setIsInFavorites(isAlreadyInFavorites);
+      } catch (error) {
+        console.error('Ошибка при загрузке избранного:', error);
+      }
+    };
+
+    fetchFavorites();
+  }, [guitar._id]);
+
   const addFavorite = async () => {
+    if (isInFavorites) {
+      alert('Этот товар уже есть в вашем избранном');
+      return;
+    }
+
     const token = localStorage.getItem('access_token');
 
     try {
@@ -34,18 +73,27 @@ export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log('Товар успешно добавлен в корзину');
-      alert('Товар успешно добавлен в корзину');
+      console.log('Товар успешно добавлен в избранное');
+      alert('Товар успешно добавлен в избранное');
+      setIsInFavorites(true); // Обновляем состояние после успешного добавления
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error(axiosError);
-      alert('Ошибка при добавлении товара в корзину');
+      alert('Ошибка при добавлении товара в избранное');
     }
   };
 
   return (
-    <button className="favoriteBtn" onClick={addFavorite}>
+    <button
+      className="favoriteBtn"
+      onClick={addFavorite}
+      disabled={isInFavorites} // Отключаем кнопку, если товар уже в избранном
+      style={{
+        cursor: isInFavorites ? 'not-allowed' : 'pointer',
+        opacity: isInFavorites ? 0.5 : 1,
+      }}
+    >
       <FavoriteBorderIcon />
     </button>
   );
-}
+};
