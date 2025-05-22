@@ -1,7 +1,7 @@
-import { useState, ChangeEvent, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { Typography, Grid, Box } from '@mui/material';
-import { Link } from 'react-router-dom'; // Импортируем Link для навигации
+import { Typography, Grid, Box, Container } from '@mui/material';
+import { Link } from 'react-router-dom'; 
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -12,7 +12,8 @@ import {
 } from './styles';
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
 import { theme } from 'src/theme';
-import { ROUTES } from 'src/constants'; // Импортируем ROUTES
+import { ROUTES } from 'src/constants'; 
+import {Loader} from 'src/components'
 
 interface Guitar {
   _id: string;
@@ -112,7 +113,11 @@ export const CatalogPage = () => {
   const sortedAndFilteredGuitars = guitars ? sortAndFilterGuitars(guitars) : [];
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
   }
 
   if (error) {

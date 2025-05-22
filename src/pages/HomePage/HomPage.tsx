@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { BasketBtn, FavoriteBtn, ModalWindow } from 'src/components';
 import { handleImageError } from 'src/utils';
 import {
@@ -31,7 +31,6 @@ import {
 } from './styles';
 import { Typography, Box, Grid, Container } from '@mui/material';
 import {ROUTES} from 'src/constants'
-import { Link } from 'react-router-dom';
 import {Loader} from 'src/components'
 
 interface Guitar {
@@ -43,7 +42,7 @@ interface Guitar {
   brand: string;
   type: string;
   description: string;
-  popularity: number; // Новое поле для популярности
+  popularity: number; 
   seller: {
     login: string;
     name: string;

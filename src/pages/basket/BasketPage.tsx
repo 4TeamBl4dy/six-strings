@@ -7,8 +7,9 @@ import {BasketContainer, BasketTitle, DeleteAllButton, GuitarItem, GuitarImage, 
 import {
   Box,
   Typography,
+  Container
 } from '@mui/material';
-import { PaymentModalWrapper } from 'src/components';
+import { PaymentModalWrapper, Loader } from 'src/components';
 
 interface BasketItem {
   guitarId: string;
@@ -24,6 +25,7 @@ export const Basket = () => {
   const [count, setCount] = useState<{ [key: string]: number }>({});
   const [sum, setSum] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const token = localStorage.getItem('access_token');
   const navigate = useNavigate();
@@ -40,9 +42,11 @@ export const Basket = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response: AxiosResponse<BasketItem[]>) => {
+        setLoading(true)
         const data = response.data;
         setBasket(data);
         setSum(data.reduce((total, guitar) => total + guitar.guitarCost * guitar.guitarCount, 0));
+        setLoading(false)
       })
       .catch((error: AxiosError) => {
         if (error.response?.status === 401) {
@@ -140,6 +144,14 @@ export const Basket = () => {
       setError('Ошибка при подтверждении покупки');
     }
   };
+
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
 
   return (
     <BasketContainer>

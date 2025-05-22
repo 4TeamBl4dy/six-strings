@@ -6,6 +6,7 @@ import { Field } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
+import {Loader} from 'src/components'
 
 interface User {
   login: string;
@@ -36,6 +37,7 @@ export const ProfilePage = () => {
   const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = useState<string>('');
   const [loginError, setLoginError] = useState<boolean>(false);
   const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -51,11 +53,13 @@ export const ProfilePage = () => {
         },
       })
       .then(response => {
+        setLoading(true)
         const { login, phone, name, img } = response.data;
         const userData = { login, phone, name: name || '', img: img || '' };
         setUser(userData);
         setInitialUser(userData); // Сохраняем начальные значения
         setPreview(img || null);
+        setLoading(false)
       })
       .catch(error => {
         console.error('Error fetching user data:', error);
@@ -167,6 +171,14 @@ export const ProfilePage = () => {
 
   const togglePasswordVisibility = () => setShowPassword(prev => !prev);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(prev => !prev);
+
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>

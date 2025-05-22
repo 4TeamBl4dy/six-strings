@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { Typography, Grid, Box, Avatar, Link } from '@mui/material';
+import axios, { AxiosResponse } from 'axios';
+import { Typography, Grid, Box, Avatar, Link, Container } from '@mui/material';
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -10,7 +10,7 @@ import {
   GuitarCardMedia,
   GuitarCardContent,
 } from './styles';
-import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
+import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title, Loader } from 'src/components';
 import { theme } from 'src/theme';
 import { ROUTES } from 'src/constants';
 import {normalizePhoneNumber} from 'src/utils'
@@ -138,7 +138,11 @@ export const SalerProductsPage = () => {
   const sortedAndFilteredGuitars = guitars ? sortAndFilterGuitars(guitars) : [];
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
   }
 
   if (error) {

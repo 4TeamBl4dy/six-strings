@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Grid, Box } from '@mui/material';
+import { Typography, Grid, Box, Container } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { handleImageError } from 'src/utils';
@@ -13,6 +13,7 @@ import {
   GuitarCardContent,
   ActionButton,
 } from './styles';
+import {Loader} from 'src/components'
 
 // Тип для объекта в избранном
 interface FavoriteItem {
@@ -36,6 +37,7 @@ export const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [basket, setBasket] = useState<BasketItem[]>([]); // Состояние для корзины
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const token = localStorage.getItem('access_token');
   const navigate = useNavigate();
@@ -52,6 +54,7 @@ export const FavoritesPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response: AxiosResponse<FavoriteItem[]>) => {
+        setLoading(true)
         setFavorites(response.data || []);
       })
       .catch((error: AxiosError) => {
@@ -76,6 +79,7 @@ export const FavoritesPage = () => {
       })
       .then((response: AxiosResponse<BasketItem[]>) => {
         setBasket(response.data || []);
+        setLoading(false)
       })
       .catch((error: AxiosError) => {
         console.error('Ошибка при загрузке корзины:', error);
@@ -162,6 +166,14 @@ export const FavoritesPage = () => {
         setError('Ошибка при удалении всех товаров из избранного.');
       });
   };
+
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
 
   return (
     <StyledContainer maxWidth="xl">
