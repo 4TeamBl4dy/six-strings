@@ -18,9 +18,9 @@ import {
   ModalButtonWrapper,
   ErrorAlert,
 } from './styles';
-import { Typography, Grid, Box } from '@mui/material';
+import { Typography, Grid, Box, Container } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { CustomTextField, CustomSelect, CustomFileInput } from 'src/components';
+import { CustomTextField, CustomSelect, CustomFileInput, Loader } from 'src/components';
 
 interface Guitar {
   _id: string;
@@ -56,6 +56,7 @@ export const MyProductsPage = () => {
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const sellerLogin = localStorage.getItem('login') || '';
   const userName = localStorage.getItem('userName') || '';
@@ -75,8 +76,10 @@ export const MyProductsPage = () => {
     const fetchGuitars = async () => {
       try {
         const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
+        setLoading(true)
         const sellerGuitars = response.data.filter((guitar) => guitar.seller?.login === sellerLogin);
         setGuitars(sellerGuitars || []);
+        setLoading(false)
       } catch (error) {
         setError('Не удалось загрузить товары.');
       }
@@ -178,6 +181,7 @@ export const MyProductsPage = () => {
         setGuitars((prev) => [...prev, response.data]);
       }
 
+      alert('Товар успешно добавлен!')
       handleCloseModal();
     } catch (error) {
       setError('Не удалось сохранить товар.');
@@ -216,6 +220,14 @@ export const MyProductsPage = () => {
       }
       return 0;
     });
+
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }  
 
   return (
     <StyledContainer maxWidth="xl">

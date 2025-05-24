@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Avatar, Button, Typography, Container, InputAdornment } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Field } from 'src/components';
+import { Field, Loader } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
@@ -36,6 +36,7 @@ export const SalerProfilePage = () => {
   const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = useState<string>('');
   const [loginError, setLoginError] = useState<boolean>(false);
   const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -51,11 +52,13 @@ export const SalerProfilePage = () => {
         },
       })
       .then(response => {
+        setLoading(true)
         const { login, phone, name, img } = response.data;
         const salerData = { login, phone, name: name || '', img: img || '' };
         setSaler(salerData);
         setInitialSaler(salerData); // Сохраняем начальные значения
         setPreview(img || null);
+        setLoading(false)
       })
       .catch(error => {
         console.error('Error fetching saler data:', error);
@@ -169,6 +172,14 @@ export const SalerProfilePage = () => {
 
   const togglePasswordVisibility = () => setShowPassword(prev => !prev);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(prev => !prev);
+
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>

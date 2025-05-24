@@ -215,18 +215,35 @@ router.post('/pay', authenticateToken, async (req, res) => {
   const { amount, paymentMethodId } = req.body;
 
   try {
+    // Здесь должна быть логика Stripe для обработки платежа
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,
+      amount: amount * 100, // Stripe принимает сумму в копейках
       currency: 'kzt',
       payment_method: paymentMethodId,
       confirm: true,
-      payment_method_types: ['card'],
+      return_url: 'http://localhost:3000', // URL для возврата
     });
 
-    return res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(400).json({ success: false, error: err.message });
+    // Пример сохранения платежа в базе данных
+    const { client, db } = await connectToDb();
+    const payments = db.collection('Payments');
+    const paymentResult = await payments.insertOne({
+      userId: req.userId,
+      amount,
+      transactionId: paymentIntent.id,
+      status: paymentIntent.status,
+      createdAt: new Date(),
+    });
+
+    client.close();
+
+    res.json({
+      success: paymentIntent.status === 'succeeded',
+      transactionId: paymentIntent.id, // Возвращаем ID транзакции
+    });
+  } catch (error) {
+    console.error('Ошибка при обработке платежа:', error);
+    res.status(500).json({ success: false, error: 'Ошибка при обработке платежа' });
   }
 });
 

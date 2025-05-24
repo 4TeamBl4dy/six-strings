@@ -4,6 +4,7 @@ import Plot from 'react-plotly.js';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { Loader } from 'src/components';
 
 type DetailItem = {
   date: string;
@@ -24,14 +25,23 @@ export const StatsPage = () => {
   const [basketDetails, setBasketDetails] = useState<DetailItem[]>([]);
   const [favoritesDetails, setFavoritesDetails] = useState<DetailItem[]>([]);
   const [period, setPeriod] = useState<'week' | 'month' | 'halfYear'>('week');
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          console.error('Токен отсутствует. Пожалуйста, войдите в систему.');
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
         const sellerLogin = localStorage.getItem('login') || '';
         const response = await axios.get('http://localhost:8080/stats', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+            Authorization: `Bearer ${token}`,
           },
           params: { sellerLogin },
         });
@@ -41,8 +51,13 @@ export const StatsPage = () => {
         setFavoritesData(data.favorites || []);
         setBasketDetails(data.basketDetails || []);
         setFavoritesDetails(data.favoritesDetails || []);
+        setLoading(false);
       } catch (error) {
         console.error('Ошибка при получении статистики:', error);
+        setLoading(false);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          alert('Ошибка авторизации. Пожалуйста, войдите снова.');
+        }
       }
     };
 
@@ -54,7 +69,7 @@ export const StatsPage = () => {
     details: DetailItem[],
     periodType: 'week' | 'month' | 'halfYear'
   ) => {
-    const today = new Date('2025-05-21T20:50:00+05:00');
+    const today = new Date();
     let startDate = new Date(today);
 
     switch (periodType) {
@@ -91,27 +106,30 @@ export const StatsPage = () => {
     if (dateDetails.length === 0) return 'Нет данных';
 
     return dateDetails
-      .map(item => `• Товар: ${item.productName} —  Покупатель:${item.userLogin}`)
+      .map(item => `• Товар: ${item.productName} — Покупатель: ${item.userLogin}`)
       .join('<br>');
   };
 
-
   const handleExport = () => {
-    const basketSheet = XLSX.utils.json_to_sheet(basketDetails.map(item => ({
-      'Дата': item.date,
-      'ID товара': item.productId,
-      'Название товара': item.productName,
-      'ID покупателя': item.userId,
-      'Логин покупателя': item.userLogin,
-    })));
+    const basketSheet = XLSX.utils.json_to_sheet(
+      basketDetails.map(item => ({
+        'Дата': item.date,
+        'ID товара': item.productId,
+        'Название товара': item.productName,
+        'ID покупателя': item.userId,
+        'Логин покупателя': item.userLogin,
+      }))
+    );
 
-    const favoritesSheet = XLSX.utils.json_to_sheet(favoritesDetails.map(item => ({
-      'Дата': item.date,
-      'ID товара': item.productId,
-      'Название товара': item.productName,
-      'ID покупателя': item.userId,
-      'Логин покупателя': item.userLogin,
-    })));
+    const favoritesSheet = XLSX.utils.json_to_sheet(
+      favoritesDetails.map(item => ({
+        'Дата': item.date,
+        'ID товара': item.productId,
+        'Название товара': item.productName,
+        'ID покупателя': item.userId,
+        'Логин покупателя': item.userLogin,
+      }))
+    );
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, basketSheet, 'Корзина');
@@ -126,6 +144,14 @@ export const StatsPage = () => {
     filterDataByPeriod(basketData, basketDetails, period);
   const { filteredData: filteredFavoritesData, filteredDetails: filteredFavoritesDetails } =
     filterDataByPeriod(favoritesData, favoritesDetails, period);
+
+  if (loading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
 
   const renderPlot = (title: string, data: StatItem[], details: DetailItem[], color: string) => (
     <Card sx={{ mb: 4, boxShadow: 3, borderRadius: 3, backgroundColor: '#fafafa', width: '100%' }}>
@@ -204,8 +230,16 @@ export const StatsPage = () => {
         </Stack>
       </Stack>
 
-      {renderPlot('Продано товаров', filteredBasketData, filteredBasketDetails, '#FB8C00')}
-      {renderPlot('Добавили в избранное', filteredFavoritesData, filteredFavoritesDetails, '#E53935')}
+      {filteredBasketData.length === 0 && filteredFavoritesData.length === 0 ? (
+        <Typography variant="body1" color="text.secondary" textAlign="center">
+          Нет данных за выбранный период.
+        </Typography>
+      ) : (
+        <>
+          {renderPlot('Продано товаров', filteredBasketData, filteredBasketDetails, '#FB8C00')}
+          {renderPlot('Добавили в избранное', filteredFavoritesData, filteredFavoritesDetails, '#E53935')}
+        </>
+      )}
     </Container>
   );
 };

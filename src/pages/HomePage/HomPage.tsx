@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { BasketBtn, FavoriteBtn, ModalWindow } from 'src/components';
+import { BasketBtn, FavoriteBtn, ModalWindow, Loader } from 'src/components';
 import { handleImageError } from 'src/utils';
 import {
   StyledContainer,
@@ -31,7 +31,6 @@ import {
 } from './styles';
 import { Typography, Box, Grid, Container } from '@mui/material';
 import {ROUTES} from 'src/constants'
-import {Loader} from 'src/components'
 
 interface Guitar {
   _id: string;

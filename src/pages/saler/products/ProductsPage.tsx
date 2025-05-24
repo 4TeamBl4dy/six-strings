@@ -9,8 +9,8 @@ import {
   GuitarCardContent,
   PageTitle
 } from './styles';
-import { Typography, Grid, Box } from '@mui/material';
-import { ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
+import { Typography, Grid, Box, Container } from '@mui/material';
+import { ModalWindow, CustomTextField, CustomSelect, Loader } from 'src/components';
 
 interface Guitar {
   _id: string;
@@ -107,7 +107,13 @@ export const ProductsPage: React.FC = () => {
 
   const filteredGuitars = sortAndFilter();
 
-  if (loading) return <div>Загрузка...</div>;
+  if (loading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+        <Loader />
+      </Container>
+    );
+  }
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (

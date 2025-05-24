@@ -17,9 +17,9 @@ import {
   CircularProgress,
 } from '@mui/material';
 import React, { useState } from 'react';
+import { jsPDF } from 'jspdf';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
 
 interface PaymentModalProps {
   open: boolean;
@@ -53,6 +53,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<{
+    transactionId: string;
+    date: string;
+  } | null>(null);
+
+  const loadFont = async () => {
+    const response = await fetch('../../../../public/fonts/roboto-regular.ttf');
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Преобразуем Uint8Array в Base64
+    let binary = '';
+    const len = uint8Array.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    const base64String = btoa(binary);
+
+    return base64String;
+  };
 
   const handlePay = async () => {
     if (!stripe || !elements) return;
@@ -69,26 +89,59 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       return;
     }
 
-    const res = await fetch('http://localhost:8080/pay', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-      },
-      body: JSON.stringify({
-        amount,
-        paymentMethodId: paymentMethod.id,
-      }),
-    });
+    try {
+      const res = await fetch('http://localhost:8080/pay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          amount,
+          paymentMethodId: paymentMethod.id,
+        }),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
+      setLoading(false);
 
-    if (data.success) {
-      onSuccess();
-      onClose();
-    } else {
-      alert('Оплата не удалась');
+      if (data.success) {
+        const transactionId = data.transactionId || 'TXN-' + Math.random().toString(36).substr(2, 9);
+        const paymentDate = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
+
+        setPaymentDetails({
+          transactionId,
+          date: paymentDate,
+        });
+
+        // Загружаем и добавляем шрифт
+        const fontData = await loadFont();
+        const doc = new jsPDF();
+        doc.addFileToVFS('Roboto-Regular.ttf', fontData);
+        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+        doc.setFont('Roboto');
+
+        doc.setFontSize(16);
+        doc.text('Чек об оплате', 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Дата и время: ${paymentDate}`, 20, 30);
+        doc.text(`Сумма: ${amount.toFixed(2)} ₸`, 20, 40);
+        doc.text(`ID транзакции: ${transactionId}`, 20, 50);
+        doc.text('Магазин: SixStrings', 20, 60);
+        doc.text('Спасибо за покупку!', 20, 70);
+
+        doc.save(`SixStrings_Receipt_${transactionId}.pdf`);
+
+        onSuccess();
+        alert('Оплата успешно прошла!')
+        onClose();
+      } else {
+        alert('Оплата не удалась');
+      }
+    } catch (error) {
+      console.error('Ошибка при обработке платежа:', error);
+      setLoading(false);
+      alert('Произошла ошибка при обработке платежа');
     }
   };
 
