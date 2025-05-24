@@ -1,26 +1,24 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { fetchToken } from "src/hooks";
+import { Navigate, useLocation, Outlet } from "react-router-dom"; // Added Outlet
+// Removed fetchToken and React related imports not strictly needed for this version
 import { ROUTES } from "src/constants";
-import React, { useEffect, useState } from "react";
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../storage/store'; // Adjust path as necessary
 
-export function RequireToken({ children }: { children: React.ReactNode }) {
-  const [unauthorized, setUnauthorized] = useState(false);
-  const auth: string | null = fetchToken();
+// children prop is implicitly handled by Outlet now for route element usage
+export function RequireToken() { 
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const location = useLocation();
 
-  useEffect(() => {
-    const handleUnauthorized = () => setUnauthorized(true);
+  // The custom 'unauthorized' event listener logic is removed as it's an external mechanism.
+  // Redux state (isAuthenticated) is now the source of truth.
+  // If a global 'unauthorized' event needs to dispatch a Redux action (e.g., logout),
+  // that should be set up elsewhere, e.g., in App.tsx or a main initialization file.
 
-    window.addEventListener("unauthorized", handleUnauthorized);
-
-    return () => {
-      window.removeEventListener("unauthorized", handleUnauthorized);
-    };
-  }, []);
-
-  if (!auth || unauthorized) {
-    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} />;
+  if (!isAuthenticated) {
+    // Pass the current location to redirect back after login
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  return <>{children}</>;
+  // If authenticated, render the child routes
+  return <Outlet />; 
 }

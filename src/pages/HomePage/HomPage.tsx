@@ -30,24 +30,9 @@ import {
   FooterDescription,
 } from './styles';
 import { Typography, Box, Grid, Container } from '@mui/material';
-import {ROUTES} from 'src/constants'
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  brand: string;
-  type: string;
-  description: string;
-  popularity: number; 
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import {ROUTES} from 'src/constants';
+import { Guitar } from '../../types/product'; // Import global Guitar type
+import { getPopularGuitars } from '../../api/products'; // Import API function
 
 export const HomePage = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);
@@ -60,18 +45,18 @@ export const HomePage = () => {
   // Загрузка данных о популярных гитарах с сервера
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost:8080/guitars/popular')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Ошибка загрузки данных');
-        }
-        return res.json();
+    getPopularGuitars()
+      .then(data => {
+        setGuitars(data);
       })
-      .then((data: Guitar[]) => {
-        setGuitars(data); // Уже отсортированные по популярности
+      .catch(err => {
+        console.error(err);
+        // Optionally, set an error state to display a message to the user
+        // setErrorState((err as Error).message || 'Не удалось загрузить популярные товары.');
+      })
+      .finally(() => {
         setLoading(false);
-      })
-      .catch((error: unknown) => console.error(error));
+      });
   }, []);
 
   // Расчёт количества карточек на страницу (максимум 5) и общего числа страниц

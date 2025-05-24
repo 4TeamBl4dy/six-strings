@@ -1,7 +1,7 @@
 import './styles.css';
-import React, { useState, FormEvent, ChangeEvent } from 'react';
+import React, { useState, FormEvent, ChangeEvent, useEffect } from 'react'; // Added useEffect
 import { useNavigate, NavLink } from 'react-router-dom';
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import { useDispatch, useSelector } from 'react-redux'; // Import Redux hooks
 import Logo from '/public/icons/logo.png';
 import { Box, Typography, InputAdornment } from '@mui/material';
 import { PHONE_MASK, ROUTES } from 'src/constants';
@@ -10,146 +10,114 @@ import { Field } from 'src/components';
 import { isValidPhone, isStrongPassword } from 'src/constants';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+// AuthHandlerProps is removed as Redux manages auth state globally
+import { RegistrationData } from '../../types/auth';
+import { AppDispatch, RootState } from '../../storage/store';
+import { registerUser, clearAuthError } from '../../storage/features/authSlice';
 
-interface SignUpProps {
-  handleSetIsAuth: (token: string) => void;
-}
+// handleSetIsAuth prop is removed
+export default function Registration() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { 
+    isLoading, 
+    error: authError, 
+    isAuthenticated 
+  } = useSelector((state: RootState) => state.auth);
 
-interface RegisterResponse {
-  token: string;
-  name: string;
-  phone: string;
-}
+  const navigate = useNavigate();
 
-export default function Registration({ handleSetIsAuth }: SignUpProps) {
-  const [account, setAccount] = useState<boolean>(false);
+  // Local state for form inputs remains
   const [name, setName] = useState<string>('');
   const [login, setLogin] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [saler, setSaler] = useState<boolean>(false);
-  const [nameError, setNameError] = useState<boolean>(false);
-  const [nameErrorMessage, setNameErrorMessage] = useState<string>('');
-  const [loginError, setLoginError] = useState<boolean>(false);
-  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
-  const [phoneError, setPhoneError] = useState<boolean>(false);
-  const [phoneErrorMessage, setPhoneErrorMessage] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<boolean>(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string>('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState<boolean>(false);
-  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = useState<string>('');
+  const [saler, setSaler] = useState<boolean>(false); // For "register as saler" checkbox
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
-  const navigate = useNavigate();
+  // Local state for client-side validation errors
+  const [nameError, setNameError] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+  const [phoneError, setPhoneError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string>('');
 
-  const register = async (e: FormEvent<HTMLFormElement>) => {
+
+  const handleRegisterSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    dispatch(clearAuthError()); // Clear previous API errors
+    // Clear local validation errors
+    setNameError('');
+    setLoginError('');
+    setPhoneError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
 
     let isValid = true;
-
     if (!name) {
-      setNameError(true);
-      setNameErrorMessage('Поле с именем не должно быть пустым.');
+      setNameError('Поле с именем не должно быть пустым.');
       isValid = false;
-    } else {
-      setNameError(false);
-      setNameErrorMessage('');
     }
-
     if (!login) {
-      setLoginError(true);
-      setLoginErrorMessage('Поле с логином не должно быть пустым.');
+      setLoginError('Поле с логином не должно быть пустым.');
       isValid = false;
-    } else {
-      setLoginError(false);
-      setLoginErrorMessage('');
     }
-
     if (!phone) {
-      setPhoneError(true);
-      setPhoneErrorMessage('Поле с телефоном не должно быть пустым.');
+      setPhoneError('Поле с телефоном не должно быть пустым.');
       isValid = false;
     } else if (!isValidPhone(phone)) {
-      setPhoneError(true);
-      setPhoneErrorMessage('Неверный формат телефона.');
+      setPhoneError('Неверный формат телефона.');
       isValid = false;
-    } else {
-      setPhoneError(false);
-      setPhoneErrorMessage('');
     }
-
     if (!password) {
-      setPasswordError(true);
-      setPasswordErrorMessage('Поле с паролем не должно быть пустым.');
+      setPasswordError('Поле с паролем не должно быть пустым.');
       isValid = false;
     } else if (!isStrongPassword(password)) {
-      setPasswordError(true);
-      setPasswordErrorMessage('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.');
+      setPasswordError('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.');
       isValid = false;
-    } else {
-      setPasswordError(false);
-      setPasswordErrorMessage('');
     }
-
     if (!confirmPassword) {
-      setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage('Поле для подтверждения пароля не должно быть пустым.');
+      setConfirmPasswordError('Поле для подтверждения пароля не должно быть пустым.');
       isValid = false;
     } else if (confirmPassword !== password) {
-      setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage('Пароли не совпадают.');
+      setConfirmPasswordError('Пароли не совпадают.');
       isValid = false;
-    } else {
-      setConfirmPasswordError(false);
-      setConfirmPasswordErrorMessage('');
     }
 
     if (!isValid) return;
 
-    try {
-      const userData = {
-        login,
-        password,
-        name,
-        phone,
-      };
-
-      const response: AxiosResponse<RegisterResponse> = await axios.post(
-        saler ? 'http://localhost:8080/register_saler' : 'http://localhost:8080/register_user',
-        userData
-      );
-
-      const { token, name: responseName, phone: responsePhone } = response.data;
-      console.log('Ответ сервера:', response.data); // Для отладки
-
-      localStorage.setItem('token', token);
-      localStorage.setItem('login', login);
-      localStorage.setItem('userName', responseName);
-      localStorage.setItem('userPhone', responsePhone);
-      handleSetIsAuth(token);
-      setAccount(true);
-
-      const redirectPath = saler ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE;
-      console.log('Перенаправление на:', redirectPath); // Для отладки
-      navigate(redirectPath);
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error('Ошибка при регистрации:', axiosError);
-      if (axiosError.response?.status === 401) {
-        setLoginError(true);
-        setLoginErrorMessage('Пользователь с таким логином уже зарегистрирован.');
-      } else {
-        setLoginError(true);
-        setLoginErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
-      }
-    }
+    const userData: RegistrationData = { name, login, phone, password };
+    dispatch(registerUser({ userData, isSaler: saler }))
+      .unwrap()
+      .then(() => {
+        // Navigation handled by useEffect watching isAuthenticated
+      })
+      .catch((errorPayload) => {
+        // errorPayload is the string from rejectWithValue
+        // Set loginError if the error is about existing user, otherwise it's a general authError
+        if (typeof errorPayload === 'string' && (errorPayload.toLowerCase().includes('логин') || errorPayload.toLowerCase().includes('пользователь'))) {
+            setLoginError(errorPayload);
+        }
+        // The global authError from Redux store will display other errors.
+      });
   };
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(saler ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
+    }
+  }, [isAuthenticated, navigate, saler]);
 
+  // Clear auth error on component unmount
+  useEffect(() => {
+    return () => {
+      dispatch(clearAuthError());
+    };
+  }, [dispatch]);
+  
   const handleSetSaler = (e: ChangeEvent<HTMLInputElement>) => {
     setSaler(e.target.checked);
-    console.log('Флаг продавца:', e.target.checked);
   };
 
   const togglePasswordVisibility = () => {
@@ -159,6 +127,9 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword((prev) => !prev);
   };
+  
+  // Display API error if it's not specific to a field already showing a local error
+  const generalAuthError = authError && !loginError ? authError : null;
 
   return (
     <div className="Login">
@@ -166,15 +137,16 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
         <img src={Logo} className="logo" alt="Logo" />
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <h3>РЕГИСТРАЦИЯ</h3>
-          <form onSubmit={register} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {generalAuthError && <Typography color="error" sx={{ mb: 1, textAlign: 'center' }}>{generalAuthError}</Typography>}
+          <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="input-container">
               <Field
                 sx={{ minWidth: '272px' }}
                 placeholder="Имя"
                 value={name}
-                onChange={(value: string) => setName(value)}
-                error={nameError}
-                helperText={nameErrorMessage}
+                onChange={(value: string) => { setName(value); setNameError(''); dispatch(clearAuthError()); }}
+                error={!!nameError}
+                helperText={nameError}
               />
             </div>
             <div className="input-container">
@@ -182,9 +154,9 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 sx={{ minWidth: '272px' }}
                 placeholder="Логин"
                 value={login}
-                onChange={(value: string) => setLogin(value)}
-                error={loginError}
-                helperText={loginErrorMessage}
+                onChange={(value: string) => { setLogin(value); setLoginError(''); dispatch(clearAuthError()); }}
+                error={!!loginError || (!!authError && (authError.toLowerCase().includes('логин') || authError.toLowerCase().includes('пользователь')))}
+                helperText={loginError || (authError && (authError.toLowerCase().includes('логин') || authError.toLowerCase().includes('пользователь')) ? authError : '')}
               />
             </div>
             <div className="input-container">
@@ -192,10 +164,10 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 sx={{ minWidth: '272px' }}
                 placeholder="Телефон"
                 value={phone}
-                onChange={(value: string) => setPhone(value)}
+                onChange={(value: string) => { setPhone(value); setPhoneError(''); dispatch(clearAuthError()); }}
                 mask={PHONE_MASK}
-                error={phoneError}
-                helperText={phoneErrorMessage}
+                error={!!phoneError}
+                helperText={phoneError}
               />
             </div>
             <div className="input-container">
@@ -203,10 +175,10 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 sx={{ minWidth: '272px' }}
                 placeholder="Пароль"
                 value={password}
-                onChange={(value: string) => setPassword(value)}
+                onChange={(value: string) => { setPassword(value); setPasswordError(''); dispatch(clearAuthError()); }}
                 type={showPassword ? 'text' : 'password'}
-                error={passwordError}
-                helperText={passwordErrorMessage}
+                error={!!passwordError}
+                helperText={passwordError}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">

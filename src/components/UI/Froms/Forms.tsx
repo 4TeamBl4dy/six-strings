@@ -2,6 +2,12 @@ import { styled } from '@mui/material/styles';
 import { TextField, Select, MenuItem, SelectChangeEvent, InputBase } from '@mui/material';
 import { ChangeEvent, ReactNode } from 'react';
 import { theme } from 'src/theme';
+import { 
+  CustomTextFieldProps, 
+  Option, 
+  CustomSelectProps, 
+  CustomFileInputProps 
+} from '../../../types/form'; // Adjusted import path
 
 // Стили для текстового поля
 export const CustomTextFieldStyled = styled(TextField)({
@@ -63,17 +69,6 @@ export const CustomFileInputStyled = styled(InputBase)({
   },
 });
 
-interface CustomTextFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  fullWidth?: boolean;
-  multiline?: boolean;
-  rows?: number;
-  type?: string;
-  sx?: React.CSSProperties
-}
-
 export const CustomTextField: React.FC<CustomTextFieldProps> = ({
   label,
   value,
@@ -98,21 +93,6 @@ export const CustomTextField: React.FC<CustomTextFieldProps> = ({
     />
   );
 };
-
-interface Option {
-  value: string;
-  label: string;
-}
-
-interface CustomSelectProps {
-  label: string;
-  value: string | string[];
-  onChange: (value: string | string[]) => void;
-  options: Option[];
-  multiple?: boolean;
-  fullWidth?: boolean;
-  sx?: React.CSSProperties
-}
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
   label,
@@ -159,10 +139,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     </CustomSelectStyled>
   );
 };
-
-interface CustomFileInputProps {
-  onChange: (file: File | null) => void;
-}
 
 export const CustomFileInput: React.FC<CustomFileInputProps> = ({ onChange }) => {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {

@@ -3,19 +3,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from 'src/constants';
-
-interface User {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-}
-
-interface SidebarFooterProfileProps {
-  user: User | null;
-  onLogout: () => void;
-  refreshUser: () => void;
-}
+// UserProfile will be used by SidebarFooterProfileProps from props.ts
+// import { UserProfile } from '../../../../types/user'; // No longer directly needed here
+import { SidebarFooterProfileProps } from '../../../../types/props'; // Adjusted import path
 
 export const SidebarFooterProfile = ({ user, onLogout, refreshUser }: SidebarFooterProfileProps) => {
   const navigate = useNavigate();

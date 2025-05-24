@@ -2,29 +2,9 @@ import React, { useState } from 'react';
 import { Modal, Box, Typography, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import './styles.css'
-import {theme} from 'src/theme'
-
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  brand?: string;
-  type?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
-
-// Тип для пропсов компонента
-interface ModalWindowProps {
-  guitar: Guitar;
-}
+import {theme} from 'src/theme';
+import { Guitar } from '../../../types/product'; // Adjusted import path
+import { ModalWindowProps } from '../../../types/props'; // Adjusted import path
 
 export const ModalWindow = ({ guitar }: ModalWindowProps) => {
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);

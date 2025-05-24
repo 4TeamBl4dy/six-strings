@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
 import { Typography, Grid, Box, Container } from '@mui/material';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -12,50 +12,27 @@ import {
 } from './styles';
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
 import { theme } from 'src/theme';
-import { ROUTES } from 'src/constants'; 
-import {Loader} from 'src/components'
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { ROUTES } from 'src/constants';
+import { Loader } from 'src/components';
+import { Guitar } from '../../types/product';
+import { AppDispatch, RootState } from 'src/storage/store';
+import { fetchProducts } from 'src/storage/features/productSlice';
 
 export const CatalogPage = () => {
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: guitars, loading, error } = useSelector((state: RootState) => state.products);
+
+  // Local state for UI filtering/sorting
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   const err = 'Нет в наличии';
 
   useEffect(() => {
-    setLoading(true);
-    axios
-      .get('http://localhost:8080/guitars')
-      .then((response: AxiosResponse<Guitar[]>) => {
-        setGuitars(response.data || []);
-        setLoading(false);
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при загрузке товаров:', error);
-        setError('Не удалось загрузить каталог. Попробуйте позже.');
-        setLoading(false);
-      });
-  }, []);
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
@@ -112,7 +89,8 @@ export const CatalogPage = () => {
 
   const sortedAndFilteredGuitars = guitars ? sortAndFilterGuitars(guitars) : [];
 
-  if (loading) {
+  // Updated loading and error handling
+  if (loading === 'pending') {
     return (
       <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
         <Loader />
@@ -120,9 +98,17 @@ export const CatalogPage = () => {
     );
   }
 
-  if (error) {
-    return <div style={{ color: 'red' }}>{error}</div>;
+  if (loading === 'failed' && error) {
+    return <div style={{ color: 'red', textAlign: 'center', marginTop: '20px' }}>{error}</div>;
   }
+  
+  // Handle the case where loading is 'idle' and no products have been fetched yet, 
+  // or if loading is 'succeeded' but items array is empty (though sortAndFilterGuitars handles empty guitars).
+  // This specific check might be redundant if sortedAndFilteredGuitars handles it well.
+  // if (loading !== 'pending' && loading !== 'failed' && guitars.length === 0 && !error) {
+  //   return <div style={{ textAlign: 'center', marginTop: '20px' }}>Каталог пуст или товары не загружены.</div>;
+  // }
+
 
   return (
     <StyledContainer maxWidth="xl">

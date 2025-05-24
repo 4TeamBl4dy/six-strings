@@ -9,9 +9,14 @@ import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
 import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
-import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { removeToken } from 'src/hooks';
+import { useEffect, useCallback } from 'react'; // Removed useState
+import { useDispatch, useSelector } from 'react-redux'; // Import Redux hooks
+// Removed removeToken and getSalerProfile
+import { SalerPublicProfile } from '../../../types/saler'; // Still needed for type consistency if SidebarFooterProfile expects it.
+                                                        // UserProfile from types/user could be used if SidebarFooterProfile's 'user' prop is UserProfile
+import { AppDispatch, RootState } from '../../../storage/store';
+import { logoutUser } from '../../../storage/features/authSlice';
+import { fetchCurrentSalerProfile, clearUserProfile } from '../../../storage/features/userProfileSlice';
 
 // Навигация для продавца
 const NAVIGATION: Navigation = [
@@ -32,47 +37,39 @@ const NAVIGATION: Navigation = [
   },
 ];
 
-interface Saler {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-}
-
 export const SalerDashboard = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [saler, setSaler] = useState<Saler | null>(null);
 
-  const fetchSalerData = useCallback(async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+  // Assuming authUser contains the necessary SalerPublicProfile fields if a saler is logged in.
+  // Or, if userProfile.profile is specifically for saler profile after fetchCurrentSalerProfile.
+  const authUser = useSelector((state: RootState) => state.auth.user); 
+  const salerProfileForFooter = useSelector((state: RootState) => state.userProfile.profile);
+  // Choose which profile to display. If userProfile.profile is fetched specifically for saler, use it.
+  // Otherwise, authUser might have the basic info. SalerPublicProfile and UserProfile are compatible for SidebarFooterProfile.
+  const displayUser = salerProfileForFooter || authUser;
 
-    try {
-      const response = await axios.get('http://localhost:8080/saler', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const { login, phone, name, img } = response.data;
-      setSaler({ login, phone, name, img });
-    } catch (error) {
-      console.error('Error fetching saler data:', error);
-    }
-  }, [navigate]);
 
+  // Fetch saler-specific detailed profile if needed, or rely on authUser.
   useEffect(() => {
-    fetchSalerData();
-  }, [fetchSalerData]);
+    // Only fetch if we don't have detailed profile or if authUser is the one to use (and exists)
+    if (authUser?.login) { // Check if a user is logged in
+        // Assuming a saler is logged in if they reach this dashboard.
+        // Dispatch fetchCurrentSalerProfile to ensure saler-specific details are in userProfile.profile
+        dispatch(fetchCurrentSalerProfile());
+    }
+  }, [dispatch, authUser]);
+
+  const handleRefreshUser = useCallback(() => {
+    dispatch(fetchCurrentSalerProfile());
+  }, [dispatch]);
 
   // Обработчик выхода
   const handleLogout = () => {
-    removeToken();
-    localStorage.clear();
-    navigate('/login');
+    dispatch(logoutUser());
+    dispatch(clearUserProfile()); // Clear the profile state
+    navigate(ROUTES.LOGIN);
   };
 
   // Кастомный роутер для Toolpad

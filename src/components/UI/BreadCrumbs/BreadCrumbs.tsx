@@ -3,11 +3,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { Breadcrumbs as MuiBreadcrumbs, Typography } from '@mui/material';
 import { ROUTES } from 'src/constants';
 import Box from '@mui/material/Box';
-
-interface BreadcrumbRoute {
-  path: string;
-  name: string;
-}
+import { BreadcrumbRoute } from '../../../types/navigation'; // Adjusted import path
 
 const breadcrumbRoutes: BreadcrumbRoute[] = [
   { path: ROUTES.HOME_PAGE, name: 'Главная' },

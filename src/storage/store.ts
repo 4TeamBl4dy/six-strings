@@ -1,17 +1,11 @@
-// src/storage/store.ts
-import { createStore, applyMiddleware, Store } from 'redux';
-import { thunk, ThunkMiddleware } from 'redux-thunk'; // Corrected import for redux-thunk
-import { composeWithDevTools } from '@redux-devtools/extension'; // For Redux DevTools Extension
+import { configureStore } from '@reduxjs/toolkit';
+import rootReducer, { RootState as AppRootState } from './rootReducer'; // Renamed RootState to avoid conflict
 
-import rootReducer from './reducers'; // Your root reducer
-import { RootState, ReduxAction } from 'src/types'; // Your RootState and a generic Action type
+export const store = configureStore({
+  reducer: rootReducer,
+  // Middleware is automatically included by configureStore, including thunk.
+});
 
-// Define the store type explicitly
-const store: Store<RootState, ReduxAction> = createStore(
-  rootReducer,
-  composeWithDevTools(
-    applyMiddleware(thunk as ThunkMiddleware<RootState, ReduxAction>)
-  )
-);
-
-export default store;
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = AppRootState; // Use the imported and renamed RootState
+export type AppDispatch = typeof store.dispatch;

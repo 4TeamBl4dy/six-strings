@@ -18,15 +18,10 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
+import { PaymentModalProps } from '../../../types/props';
+import { processPayment, PaymentRequestBody } from '../../api/payment'; // Import API function and request type
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
-interface PaymentModalProps {
-  open: boolean;
-  onClose: () => void;
-  amount: number;
-  onSuccess: () => void;
-}
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -90,23 +85,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
 
     try {
-      const res = await fetch('http://localhost:8080/pay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        body: JSON.stringify({
-          amount,
-          paymentMethodId: paymentMethod.id,
-        }),
-      });
-
-      const data = await res.json();
+      const paymentRequestBody: PaymentRequestBody = {
+        amount,
+        paymentMethodId: paymentMethod.id,
+      };
+      const paymentResponse = await processPayment(paymentRequestBody);
       setLoading(false);
 
-      if (data.success) {
-        const transactionId = data.transactionId || 'TXN-' + Math.random().toString(36).substr(2, 9);
+      if (paymentResponse.success) {
+        const transactionId = paymentResponse.transactionId || 'TXN-' + Math.random().toString(36).substr(2, 9);
         const paymentDate = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
 
         setPaymentDetails({
@@ -133,15 +120,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         doc.save(`SixStrings_Receipt_${transactionId}.pdf`);
 
         onSuccess();
-        alert('Оплата успешно прошла!')
+        alert('Оплата успешно прошла!');
         onClose();
       } else {
-        alert('Оплата не удалась');
+        // Use message from API response if available
+        alert(paymentResponse.message || 'Оплата не удалась');
       }
-    } catch (error) {
-      console.error('Ошибка при обработке платежа:', error);
+    } catch (err) {
+      console.error('Ошибка при обработке платежа:', err);
       setLoading(false);
-      alert('Произошла ошибка при обработке платежа');
+      alert((err as Error).message || 'Произошла ошибка при обработке платежа');
     }
   };
 

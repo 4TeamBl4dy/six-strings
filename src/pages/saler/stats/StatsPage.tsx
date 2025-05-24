@@ -1,68 +1,56 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, Container, Typography, Button, Stack } from '@mui/material';
 import Plot from 'react-plotly.js';
-import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { useDispatch, useSelector } from 'react-redux';
 import { Loader } from 'src/components';
+import { DetailItem, StatItem } from '../../../types/stats';
+import { AppDispatch, RootState } from '../../../storage/store';
+import { fetchSalerStats, clearStats } from '../../../storage/features/statsSlice';
+import { useNavigate } from 'react-router-dom'; // For potential redirect
+import { ROUTES } from 'src/constants';
 
-type DetailItem = {
-  date: string;
-  productId: string;
-  productName: string;
-  userId: string;
-  userLogin: string;
-};
-
-type StatItem = {
-  _id: string;
-  total: number;
-};
 
 export const StatsPage = () => {
-  const [basketData, setBasketData] = useState<StatItem[]>([]);
-  const [favoritesData, setFavoritesData] = useState<StatItem[]>([]);
-  const [basketDetails, setBasketDetails] = useState<DetailItem[]>([]);
-  const [favoritesDetails, setFavoritesDetails] = useState<DetailItem[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
+  const { 
+    basketStats, 
+    favoritesStats, 
+    basketDetails, 
+    favoritesDetails, 
+    isLoading, 
+    error 
+  } = useSelector((state: RootState) => state.stats);
+  
+  const authUser = useSelector((state: RootState) => state.auth.user);
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
   const [period, setPeriod] = useState<'week' | 'month' | 'halfYear'>('week');
-  const [loading, setLoading] = useState<boolean>(true);
+  // Local loading state removed, using isLoading from Redux
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          console.error('Токен отсутствует. Пожалуйста, войдите в систему.');
-          setLoading(false);
-          return;
-        }
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN); // Redirect if not authenticated
+      return;
+    }
 
-        setLoading(true);
-        const sellerLogin = localStorage.getItem('login') || '';
-        const response = await axios.get('http://localhost:8080/stats', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: { sellerLogin },
-        });
+    const sellerLogin = authUser?.login;
+    if (sellerLogin) {
+      dispatch(fetchSalerStats(sellerLogin));
+    } else {
+      // Handle case where seller login is not available (e.g., display error, though authUser should ideally exist if authenticated)
+      console.error("StatsPage: Seller login not found in auth state.");
+      // dispatch(setStatsError("Логин продавца не найден, не могу загрузить статистику.")); // Optional: dispatch an error to statsSlice
+    }
 
-        const data = response.data;
-        setBasketData(data.basket || []);
-        setFavoritesData(data.favorites || []);
-        setBasketDetails(data.basketDetails || []);
-        setFavoritesDetails(data.favoritesDetails || []);
-        setLoading(false);
-      } catch (error) {
-        console.error('Ошибка при получении статистики:', error);
-        setLoading(false);
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          alert('Ошибка авторизации. Пожалуйста, войдите снова.');
-        }
-      }
+    return () => {
+      // Optionally clear stats when component unmounts or user changes
+      // dispatch(clearStats()); 
     };
-
-    fetchStats();
-  }, []);
+  }, [dispatch, authUser, isAuthenticated, navigate]);
 
   const filterDataByPeriod = (
     data: StatItem[],
