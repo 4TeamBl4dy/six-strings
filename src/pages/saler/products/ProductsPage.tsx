@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios, { AxiosResponse } from 'axios';
+// Removed axios import
+import { useSelector } from 'react-redux'; // Import Redux hook
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -11,24 +12,12 @@ import {
 } from './styles';
 import { Typography, Grid, Box, Container } from '@mui/material';
 import { ModalWindow, CustomTextField, CustomSelect, Loader } from 'src/components';
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from '../../../types/product';
+import { getGuitars } from '../../../api/products'; // Import API function
+import { RootState } from '../../../storage/store'; // Import RootState for useSelector
 
 export const ProductsPage: React.FC = () => {
+  const authUser = useSelector((state: RootState) => state.auth.user);
   const [guitars, setGuitars] = useState<Guitar[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
@@ -37,23 +26,32 @@ export const ProductsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const sellerLogin = localStorage.getItem('login') || '';
+  const sellerLoginFromAuth = authUser?.login || '';
 
   useEffect(() => {
     setLoading(true);
-    axios.get<Guitar[]>('http://localhost:8080/guitars')
-      .then((response: AxiosResponse<Guitar[]>) => {
-        // Оставляем только товары, не созданные текущим продавцом
-        const otherGuitars = response.data.filter(g => g.seller.login !== sellerLogin);
-        setGuitars(otherGuitars);
-        setLoading(false);
+    setError(null); // Clear previous errors
+    getGuitars()
+      .then(allGuitars => {
+        if (sellerLoginFromAuth) {
+          const otherGuitars = (allGuitars || []).filter(g => g.seller.login !== sellerLoginFromAuth);
+          setGuitars(otherGuitars);
+        } else {
+          // If not a saler or no login, show all guitars (or handle as error/empty state)
+          // This page is "товары других продавцов", so if current user is not a saler,
+          // it might mean show all. If current user IS a saler, it means exclude own.
+          // For now, if no sellerLoginFromAuth, it will show all.
+          setGuitars(allGuitars || []);
+        }
       })
       .catch(err => {
         console.error('Ошибка при загрузке каталога:', err);
-        setError('Не удалось загрузить каталог. Попробуйте позже.');
+        setError((err as Error).message || 'Не удалось загрузить каталог. Попробуйте позже.');
+      })
+      .finally(() => {
         setLoading(false);
       });
-  }, [sellerLogin]);
+  }, [sellerLoginFromAuth]);
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },

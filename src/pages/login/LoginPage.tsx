@@ -1,8 +1,8 @@
 import './styles.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { setToken, fetchToken } from 'src/hooks'; 
+import { useDispatch, useSelector } from 'react-redux'; // Import Redux hooks
+// Removed setToken, fetchToken from src/hooks as Redux handles token
 import Logo from '/public/icons/logo.png';
 import { Box, Typography, InputAdornment } from '@mui/material';
 import { ROUTES } from 'src/constants';
@@ -10,97 +10,69 @@ import { StyledCheckbox } from 'src/components/styledComponents';
 import { Field } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+// AuthHandlerProps is removed as Redux manages auth state globally
+// import { AuthHandlerProps } from '../../types/auth'; 
+import { LoginCredentials } from '../../types/auth';
+import { AppDispatch, RootState } from '../../storage/store';
+import { loginUser, clearAuthError } from '../../storage/features/authSlice';
 
-interface LoginProps {
-  handleSetIsAuth: (token: string) => void;
-}
+// handleSetIsAuth prop is removed
+export const Login = () => { 
+  const dispatch = useDispatch<AppDispatch>();
+  const { 
+    isLoading, 
+    error: authError, 
+    isAuthenticated 
+  } = useSelector((state: RootState) => state.auth);
+  
+  const navigate = useNavigate();
 
-interface LoginResponse {
-  token: string;
-  name: string;
-  phone: string;
-}
-
-export const Login = ({ handleSetIsAuth }: LoginProps) => {
-  const [account, setAccount] = useState<boolean>(false);
+  // Local state for form inputs
   const [login, setLogin] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [admin, setAdmin] = useState<boolean>(false);
+  const [admin, setAdmin] = useState<boolean>(false); // For "login as saler" checkbox
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<boolean>(false);
-  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<boolean>(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string>('');
 
-  const navigate = useNavigate();
+  // Local state for form validation errors (optional, for immediate feedback)
+  const [localLoginError, setLocalLoginError] = useState<string>('');
+  const [localPasswordError, setLocalPasswordError] = useState<string>('');
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    dispatch(clearAuthError()); // Clear previous API errors
+    setLocalLoginError(''); // Clear local validation errors
+    setLocalPasswordError('');
 
     let isValid = true;
-
     if (!login) {
-      setLoginError(true);
-      setLoginErrorMessage('Поле с логином не должно быть пустым.');
+      setLocalLoginError('Поле с логином не должно быть пустым.');
       isValid = false;
-    } else {
-      setLoginError(false);
-      setLoginErrorMessage('');
     }
-
     if (!password) {
-      setPasswordError(true);
-      setPasswordErrorMessage('Поле с паролем не должно быть пустым.');
+      setLocalPasswordError('Поле с паролем не должно быть пустым.');
       isValid = false;
-    } else {
-      setPasswordError(false);
-      setPasswordErrorMessage('');
     }
 
     if (!isValid) return;
 
-    try {
-      const response: AxiosResponse<LoginResponse> = await axios.post(
-        admin ? 'http://localhost:8080/login_saler' : 'http://localhost:8080/login_user',
-        { login: login, password }
-      );
-      const { token, name, phone } = response.data;
-
-      setToken(token);
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userPhone', phone);
-      localStorage.setItem('login', login);
-
-      handleSetIsAuth(token);
-      setName(name);
-      setPhone(phone);
-      setAccount(true);
-      navigate(admin ? ROUTES.SALER_PAGE : ROUTES.HOME_PAGE);
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error(axiosError);
-      if (axiosError.response) {
-        if (axiosError.response.status === 401) {
-          setLoginError(true);
-          setLoginErrorMessage('Пользователь с таким логином не найден');
-        } else if (axiosError.response.status === 402) {
-          setPasswordError(true);
-          setPasswordErrorMessage('Неверный пароль');
-        } else {
-          setLoginError(true);
-          setLoginErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
-          setPasswordError(true);
-          setPasswordErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
+    const credentials: LoginCredentials = { login, password };
+    dispatch(loginUser({ credentials, isSaler: admin }))
+      .unwrap()
+      .then(() => {
+        // Navigation will be handled by useEffect watching isAuthenticated
+      })
+      .catch((errorPayload) => {
+        // Error is already in authError from Redux state, no need to set local error here
+        // unless specific field highlighting is desired based on errorPayload content.
+        // For now, a general authError display is sufficient.
+        if (typeof errorPayload === 'string') {
+            if (errorPayload.toLowerCase().includes('пароль')) {
+                setLocalPasswordError(errorPayload);
+            } else if (errorPayload.toLowerCase().includes('логин') || errorPayload.toLowerCase().includes('пользователь')) {
+                setLocalLoginError(errorPayload);
+            }
         }
-      } else {
-        setLoginError(true);
-        setLoginErrorMessage('Произошла ошибка сети. Проверьте подключение.');
-        setPasswordError(true);
-        setPasswordErrorMessage('Произошла ошибка сети. Проверьте подключение.');
-      }
-    }
+      });
   };
 
   const handleSetAdmin = () => {
@@ -110,14 +82,28 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
-
-  const auth = fetchToken();
-
+  
   useEffect(() => {
-    if (auth) {
-      navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
+    if (isAuthenticated) {
+      // User info is in state.auth.user if needed here
+      // Saler role is determined by 'admin' state at login time.
+      // The thunk stores necessary info in localStorage.
+      navigate(admin ? ROUTES.SALER_PAGE : ROUTES.HOME_PAGE);
     }
-  }, [auth, navigate]);
+  }, [isAuthenticated, navigate, admin]);
+
+  // Clear auth error on component unmount
+  useEffect(() => {
+    return () => {
+      dispatch(clearAuthError());
+    };
+  }, [dispatch]);
+
+  // Determine overall error message to display
+  const displayLoginError = localLoginError || (authError && (authError.toLowerCase().includes('логин') || authError.toLowerCase().includes('пользователь')) ? authError : '');
+  const displayPasswordError = localPasswordError || (authError && authError.toLowerCase().includes('пароль') ? authError : '');
+  const generalAuthError = authError && !displayLoginError && !displayPasswordError ? authError : null;
+
 
   return (
     <div className="Login">
@@ -125,15 +111,16 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
         <img src={Logo} className="logo" />
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <h3>ВХОД</h3>
+          {generalAuthError && <Typography color="error" sx={{ mb: 1 }}>{generalAuthError}</Typography>}
           <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="input-container">
               <Field
                 sx={{ minWidth: '272px' }}
                 placeholder="Логин"
                 value={login}
-                onChange={(value: string) => setLogin(value)}
-                error={loginError}
-                helperText={loginErrorMessage}
+                onChange={(value: string) => { setLogin(value); setLocalLoginError(''); dispatch(clearAuthError()); }}
+                error={!!displayLoginError}
+                helperText={displayLoginError}
               />
             </div>
             <div className="input-container">
@@ -141,10 +128,10 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
                 sx={{ minWidth: '272px' }}
                 placeholder="Пароль"
                 value={password}
-                onChange={(value: string) => setPassword(value)}
+                onChange={(value: string) => { setPassword(value); setLocalPasswordError(''); dispatch(clearAuthError()); }}
                 type={showPassword ? 'text' : 'password'}
-                error={passwordError}
-                helperText={passwordErrorMessage}
+                error={!!displayPasswordError}
+                helperText={displayPasswordError}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">

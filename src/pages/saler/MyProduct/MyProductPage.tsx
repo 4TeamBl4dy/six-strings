@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import axios, { AxiosResponse } from 'axios';
+import { useDispatch, useSelector } from 'react-redux'; // Import Redux hooks
 import {
   StyledContainer,
   PageTitle,
@@ -21,28 +21,34 @@ import {
 import { Typography, Grid, Box, Container } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { CustomTextField, CustomSelect, CustomFileInput, Loader } from 'src/components';
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  description: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from '../../../types/product';
+import { AppDispatch, RootState } from '../../../storage/store';
+import {
+  fetchSalerProducts,
+  createSalerProduct,
+  updateSalerProduct,
+  deleteSalerProduct,
+  clearSalerProductProcessingError,
+  // setSalerProductProcessingError // If needed for specific client-side error setting
+} from '../../../storage/features/salerProductSlice';
 
 export const MyProductsPage = () => {
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { 
+    products: salerProductsList, 
+    isLoading, 
+    error: fetchError, 
+    isProcessing, 
+    processingError 
+  } = useSelector((state: RootState) => state.salerProducts);
+  
+  const authUser = useSelector((state: RootState) => state.auth.user);
+
+  // Local state for modal and form inputs remains
   const [modalOpen, setModalOpen] = useState(false);
   const [editingGuitar, setEditingGuitar] = useState<Guitar | null>(null);
+  // Local error for form validation, API errors handled by processingError
+  const [formValidationError, setFormValidationError] = useState<string | null>(null); 
 
   const [img, setImage] = useState<File | null>(null);
   const [name, setName] = useState('');
@@ -56,11 +62,14 @@ export const MyProductsPage = () => {
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // loading state is now from Redux (isLoading)
 
-  const sellerLogin = localStorage.getItem('login') || '';
-  const userName = localStorage.getItem('userName') || '';
-  const userPhone = localStorage.getItem('userPhone') || '';
+  // sellerLogin from authUser in Redux state
+  const sellerLogin = authUser?.login || ''; 
+  // userName and userPhone for new products might need to come from authUser or a more detailed seller profile
+  const userName = authUser?.name || ''; 
+  const userPhone = authUser?.phone || ''; 
+
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
@@ -73,28 +82,25 @@ export const MyProductsPage = () => {
 
   // Загрузка товаров продавца
   useEffect(() => {
-    const fetchGuitars = async () => {
-      try {
-        const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        setLoading(true)
-        const sellerGuitars = response.data.filter((guitar) => guitar.seller?.login === sellerLogin);
-        setGuitars(sellerGuitars || []);
-        setLoading(false)
-      } catch (error) {
-        setError('Не удалось загрузить товары.');
-      }
-    };
     if (sellerLogin) {
-      fetchGuitars();
+      dispatch(fetchSalerProducts(sellerLogin));
+    } else {
+      // Handle case where sellerLogin is not available (e.g., show error, redirect)
+      // For now, fetchError from Redux will show if thunk is dispatched and fails.
+      // Or, set a local error if not dispatching.
+      console.warn("Seller login not found, cannot fetch products.");
     }
-  }, [sellerLogin]);
+    return () => {
+        dispatch(clearSalerProductProcessingError()); // Clear processing errors on unmount
+    };
+  }, [dispatch, sellerLogin]);
 
   // Получение уникальных типов и брендов для фильтров
-  const uniqueTypes = Array.from(new Set(guitars.map((g) => g.type))).map((value) => ({
+  const uniqueTypes = Array.from(new Set(salerProductsList.map((g) => g.type))).map((value) => ({
     value,
     label: categories.find((cat) => cat.value === value)?.label || value,
   }));
-  const uniqueBrands = Array.from(new Set(guitars.map((g) => g.brand))).map((brand) => ({
+  const uniqueBrands = Array.from(new Set(salerProductsList.map((g) => g.brand))).map((brand) => ({
     value: brand,
     label: brand,
   }));
@@ -108,9 +114,10 @@ export const MyProductsPage = () => {
     setAmount('');
     setType('');
     setBrand('');
-    setError(null);
+    setFormValidationError(null); // Clear form validation error
+    dispatch(clearSalerProductProcessingError()); // Clear API processing error
     setEditingGuitar(null);
-  }, []);
+  }, [dispatch]);
 
   // Обработка изменения изображения
   const handleImageChange = useCallback((file: File | null) => {
@@ -144,62 +151,65 @@ export const MyProductsPage = () => {
 
   // Создание или обновление товара
   const handleSubmit = useCallback(async () => {
-    if (!name || (!img && !editingGuitar) || !description || !cost || !amount || !type || !brand) {
-      setError('Заполните все поля.');
+    if (!name || (!img && !editingGuitar?.img) || !description || !cost || !amount || !type || !brand) {
+      setFormValidationError('Заполните все поля (и изображение для нового товара).');
       return;
     }
+    setFormValidationError(null);
+    dispatch(clearSalerProductProcessingError());
 
-    try {
-      const formData = new FormData();
-      if (img) {
-        formData.append('img', img);
-      } else if (editingGuitar) {
-        formData.append('img', editingGuitar.img);
-      }
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('cost', String(parseFloat(cost)));
-      formData.append('amount', String(parseInt(amount, 10)));
-      formData.append('type', type);
-      formData.append('brand', brand);
-      formData.append('sellerLogin', sellerLogin);
-      formData.append('userName', userName);
-      formData.append('userPhone', userPhone);
+    const formData = new FormData();
+    if (img) { // If a new image is selected for new or existing product
+      formData.append('img', img);
+    } 
+    // Note: If editing and no new image, backend must handle not overwriting existing image if 'img' field is absent.
+    // Or, if API requires 'img' field even if not changed, append editingGuitar.img (but this sends unnecessary data).
+    // Current api/myProducts.ts doesn't explicitly handle this, assumes backend logic.
 
-      let response: AxiosResponse<Guitar>;
-      if (editingGuitar) {
-        response = await axios.put(`http://localhost:8080/guitars/${editingGuitar._id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        setGuitars((prev) =>
-          prev.map((g) => (g._id === editingGuitar._id ? response.data : g))
-        );
-      } else {
-        response = await axios.post('http://localhost:8080/guitars', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        setGuitars((prev) => [...prev, response.data]);
-      }
+    formData.append('name', name);
+    formData.append('description', description);
+    formData.append('cost', String(parseFloat(cost)));
+    formData.append('amount', String(parseInt(amount, 10)));
+    formData.append('type', type);
+    formData.append('brand', brand);
+    formData.append('sellerLogin', sellerLogin); // From authUser.login
+    formData.append('userName', userName);     // From authUser.name
+    formData.append('userPhone', userPhone);   // From authUser.phone
 
-      alert('Товар успешно добавлен!')
-      handleCloseModal();
-    } catch (error) {
-      setError('Не удалось сохранить товар.');
-    }
-  }, [img, name, description, cost, amount, type, brand, editingGuitar, sellerLogin, userName, userPhone, handleCloseModal]);
+    const actionToDispatch = editingGuitar
+      ? updateSalerProduct({ productId: editingGuitar._id, productData: formData })
+      : createSalerProduct(formData);
+
+    dispatch(actionToDispatch)
+      .unwrap()
+      .then(() => {
+        alert(`Товар успешно ${editingGuitar ? 'обновлен' : 'добавлен'}!`);
+        handleCloseModal();
+      })
+      .catch((errorPayload) => {
+        // Error is already in processingError from Redux state
+        // No need to set local error unless for specific UI element not covered by global error
+      });
+  }, [
+    dispatch, img, name, description, cost, amount, type, brand, 
+    editingGuitar, sellerLogin, userName, userPhone, handleCloseModal
+  ]);
 
   // Удаление товара
   const handleDeleteGuitar = useCallback(async (guitarId: string) => {
-    try {
-      await axios.delete(`http://localhost:8080/guitars/${guitarId}`);
-      setGuitars((prev) => prev.filter((g) => g._id !== guitarId));
-    } catch (error) {
-      setError('Не удалось удалить товар.');
-    }
-  }, []);
+    dispatch(clearSalerProductProcessingError());
+    dispatch(deleteSalerProduct(guitarId))
+      .unwrap()
+      .then(() => {
+        alert('Товар успешно удален!');
+      })
+      .catch((errorPayload) => {
+        // Error is in processingError
+      });
+  }, [dispatch]);
 
   // Фильтрация и сортировка товаров
-  const filteredGuitars = guitars
+  const filteredGuitars = salerProductsList // Use products from Redux state
     .filter((guitar) =>
       guitar.name.toLowerCase().includes(searchName.toLowerCase()) &&
       (filterTypes.length ? filterTypes.includes(guitar.type) : true) &&

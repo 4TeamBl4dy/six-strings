@@ -1,6 +1,6 @@
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react'; // ChangeEvent might not be needed if not directly used
 import { Link, useParams } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux'; // Import Redux hooks
 import { Typography, Grid, Box, Container } from '@mui/material';
 import {
   StyledContainer,
@@ -11,58 +11,62 @@ import {
   GuitarCardContent,
 } from './styles';
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title, Loader } from 'src/components';
-import {ROUTES} from 'src/constants'
+import {ROUTES} from 'src/constants';
+import { Guitar } from '../../types/product';
+import { Category as CategoryType } from '../../types/categories'; // Renamed to avoid conflict
+import { AppDispatch, RootState } from '../../storage/store';
+import { fetchProducts } from '../../storage/features/productSlice';
+import { fetchCategories } from '../../storage/features/categoriesSlice';
 
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
 
 export const CategoriesPage = () => {
-  const { category } = useParams<{ category: string }>();
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
+  const { category: categoryParam } = useParams<{ category: string }>(); // category value from URL
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { 
+    items: allProducts, 
+    isLoading: productsLoading, 
+    error: productsError 
+  } = useSelector((state: RootState) => state.products);
+  
+  const { 
+    items: categoryList, 
+    isLoading: categoriesLoading, 
+    error: categoriesError 
+  } = useSelector((state: RootState) => state.categories);
+
+  // Local state for UI filters
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Категория';
+  
+  // Determine the category title dynamically from Redux state if available
+  const currentCategory = categoryList.find(c => c.value === categoryParam);
+  const categoryTitle = currentCategory?.label || (categoryParam ? categoryParam.charAt(0).toUpperCase() + categoryParam.slice(1) : 'Категория');
 
   useEffect(() => {
-    const fetchGuitars = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('http://localhost:8080/guitars');
-        setGuitars(response.data || []);
-      } catch (err) {
-        setError('Не удалось загрузить товары.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGuitars();
-  }, []);
+    // Fetch products if not already loaded or to ensure freshness for category view
+    // This condition might be refined based on overall app data loading strategy
+    if (allProducts.length === 0) { // Simple check: fetch if product list is empty
+        dispatch(fetchProducts());
+    }
+    // Fetch categories if not already loaded
+    if (categoryList.length === 0) { // Simple check: fetch if category list is empty
+        dispatch(fetchCategories());
+    }
+  }, [dispatch, allProducts.length, categoryList.length]);
+  
+  const productsForCurrentCategory = allProducts.filter(
+    (guitar) => guitar.type.toLowerCase() === categoryParam?.toLowerCase()
+  );
 
-  const uniqueBrands = Array.from(new Set(guitars.map((g) => g.brand || ''))).map((brand) => ({
+  const uniqueBrands = Array.from(new Set(productsForCurrentCategory.map((g) => g.brand || ''))).map((brand) => ({
     value: brand,
     label: brand,
   }));
 
-  const sortAndFilterGuitars = (guitars: Guitar[]): Guitar[] => {
-    let filteredGuitars = guitars.filter((guitar) => guitar.type.toLowerCase() === category?.toLowerCase());
+  const sortAndFilterGuitars = (productsToFilter: Guitar[]): Guitar[] => {
+    let filteredGuitars = [...productsToFilter]; // Start with products already filtered by category
 
     if (searchTerm) {
       filteredGuitars = filteredGuitars.filter((guitar) =>

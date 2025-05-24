@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios, { AxiosResponse } from 'axios';
+// Removed axios import
 import { Typography, Grid, Box, Avatar, Link, Container } from '@mui/material';
 import {
   StyledContainer,
@@ -13,31 +13,11 @@ import {
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title, Loader } from 'src/components';
 import { theme } from 'src/theme';
 import { ROUTES } from 'src/constants';
-import {normalizePhoneNumber} from 'src/utils'
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-    img?: string;
-  };
-}
-
-interface Seller {
-  login: string;
-  name: string;
-  phone: string;
-  img?: string;
-}
+import {normalizePhoneNumber} from 'src/utils';
+import { Guitar } from '../../types/product';
+import { SalerPublicProfile } from '../../types/saler';
+import { getGuitars } from '../../api/products'; // Import API function for guitars
+import { getSalerPublicInfo } from '../../api/saler'; // Import API function for saler info
 
 export const SalerProductsPage = () => {
   const navigate = useNavigate();
@@ -46,7 +26,7 @@ export const SalerProductsPage = () => {
   const sellerLogin = queryParams.get('seller');
 
   const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [seller, setSeller] = useState<Seller | null>(null);
+  const [seller, setSeller] = useState<SalerPublicProfile | null>(null); // Updated type
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
@@ -64,18 +44,22 @@ export const SalerProductsPage = () => {
 
     const fetchData = async () => {
       setLoading(true);
+      setError(null); // Clear previous errors
       try {
-        const sellerResponse = await axios.get(`http://localhost:8080/saler_info?login=${sellerLogin}`);
-        setSeller(sellerResponse.data);
-
-        const guitarsResponse: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        const allGuitars = guitarsResponse.data || [];
-        const sellerGuitars = allGuitars.filter((guitar) => guitar.seller.login === sellerLogin);
+        // Fetch seller info and guitars in parallel
+        const [salerData, allGuitarsData] = await Promise.all([
+          getSalerPublicInfo(sellerLogin),
+          getGuitars() 
+        ]);
+        
+        setSeller(salerData);
+        const sellerGuitars = (allGuitarsData || []).filter((guitar) => guitar.seller.login === sellerLogin);
         setGuitars(sellerGuitars);
-        setLoading(false);
-      } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-        setError('Не удалось загрузить данные. Попробуйте позже.');
+
+      } catch (err) {
+        console.error('Ошибка при загрузке данных:', err);
+        setError((err as Error).message || 'Не удалось загрузить данные. Попробуйте позже.');
+      } finally {
         setLoading(false);
       }
     };

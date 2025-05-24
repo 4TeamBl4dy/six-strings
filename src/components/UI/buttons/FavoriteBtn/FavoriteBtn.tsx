@@ -1,99 +1,77 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Keep useState for actionError if needed
 import '../styles.css';
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite'; // For filled icon
+import { Guitar } from '../../../../types/product'; // Use global Guitar type
+import { AppDispatch, RootState } from '../../../../storage/store';
+import { 
+  addFavoriteItem, 
+  removeFavoriteItemById,
+  // fetchFavoritesList // Not typically fetched by each button, but by parent page
+} from '../../../../storage/features/favoritesSlice';
 
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  amount: number;
-  cost: number;
-}
-
-// Тип для элемента избранного
-interface FavoriteItem {
-  _id: string;
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarAmount: number;
-  guitarCost: number;
-}
+// Removed local Guitar and FavoriteItem interfaces
 
 // Тип для пропсов компонента
 interface FavoriteBtnProps {
-  guitar: Guitar;
+  guitar: Guitar; // Use the global Guitar type
 }
 
 export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
-  const [isInFavorites, setIsInFavorites] = useState<boolean>(false); // Состояние для отслеживания наличия в избранном
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: favoriteItems, isUpdating, updateError } = useSelector((state: RootState) => state.favorites);
+  
+  // Determine if the current guitar is in favorites based on Redux store
+  const isInFavorites = favoriteItems.some(item => item.guitarId === guitar._id);
 
-  // Получаем данные избранного при монтировании компонента
+  // Local state for specific feedback from this button's action attempt
+  const [actionError, setActionError] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchFavorites = async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      try {
-        const response: AxiosResponse<FavoriteItem[]> = await axios.get('http://localhost:8080/favorites', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const favoriteItems = response.data || [];
-        const isAlreadyInFavorites = favoriteItems.some((item) => item.guitarId === guitar._id);
-        setIsInFavorites(isAlreadyInFavorites);
-      } catch (error) {
-        console.error('Ошибка при загрузке избранного:', error);
-      }
-    };
-
-    fetchFavorites();
-  }, [guitar._id]);
-
-  const addFavorite = async () => {
-    if (isInFavorites) {
-      alert('Этот товар уже есть в вашем избранном');
-      return;
+    // If there's a global updateError from the slice related to this item, show it
+    // This depends on how specific updateError is set in the slice.
+    // For simplicity, we can just show a generic alert from .catch()
+    if (updateError) {
+        // setActionError(updateError); // Or directly use updateError for display
     }
+  }, [updateError]);
 
-    const token = localStorage.getItem('access_token');
 
-    try {
-      const response: AxiosResponse = await axios.post(
-        'http://localhost:8080/favorites',
-        {
-          guitarId: guitar._id,
-          guitarImg: guitar.img,
-          guitarName: guitar.name,
-          guitarAmount: guitar.amount,
-          guitarCost: guitar.cost,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      console.log('Товар успешно добавлен в избранное');
-      alert('Товар успешно добавлен в избранное');
-      setIsInFavorites(true); // Обновляем состояние после успешного добавления
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error(axiosError);
-      alert('Ошибка при добавлении товара в избранное');
-    }
+  const handleToggleFavorite = async () => {
+    setActionError(null); // Clear previous action error
+
+    const actionToDispatch = isInFavorites
+      ? removeFavoriteItemById(guitar._id)
+      : addFavoriteItem(guitar._id); // addFavoriteItem expects productId
+
+    dispatch(actionToDispatch)
+      .unwrap()
+      .then(() => {
+        // Optional: success alert or notification
+        // alert(isInFavorites ? 'Удалено из избранного!' : 'Добавлено в избранное!');
+      })
+      .catch((errorPayload) => {
+        const errorMessage = (errorPayload as string) || (isInFavorites ? 'Ошибка при удалении из избранного' : 'Ошибка при добавлении в избранное');
+        setActionError(errorMessage);
+        alert(errorMessage); // Simple feedback
+      });
   };
+
+  // Display actionError or general favorites updateError
+  // const displayError = actionError || updateError; // updateError is now handled in useEffect or via alert
 
   return (
     <button
       className="favoriteBtn"
-      onClick={addFavorite}
-      disabled={isInFavorites} // Отключаем кнопку, если товар уже в избранном
+      onClick={handleToggleFavorite}
+      disabled={isUpdating} // Disable button during any favorite update operation
       style={{
-        cursor: isInFavorites ? 'not-allowed' : 'pointer',
-        opacity: isInFavorites ? 0.5 : 1,
+        cursor: isUpdating ? 'not-allowed' : 'pointer',
+        // Opacity can be handled by CSS based on disabled state if preferred
       }}
     >
-      <FavoriteBorderIcon />
+      {isInFavorites ? <FavoriteIcon sx={{ color: 'red' }} /> : <FavoriteBorderIcon />}
     </button>
   );
 };

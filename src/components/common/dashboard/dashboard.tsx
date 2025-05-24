@@ -10,9 +10,12 @@ import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
 import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard'; 
-import { useEffect, useState, useCallback } from 'react';
-import { removeToken } from 'src/hooks';
-import axios from 'axios';
+import { useEffect, useCallback } from 'react'; // Removed useState
+import { useDispatch, useSelector } from 'react-redux'; // Import Redux hooks
+// Removed removeToken and getUserProfile
+import { AppDispatch, RootState } from '../../../storage/store';
+import { logoutUser } from '../../../storage/features/authSlice';
+import { fetchUserProfile, clearUserProfile } from '../../../storage/features/userProfileSlice';
 
 // Навигация
 const NAVIGATION: Navigation = [
@@ -38,48 +41,43 @@ const NAVIGATION: Navigation = [
   },
 ];
 
-interface User {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-}
+// Removed local User interface, will use UserProfile from types/user.ts
+import { UserProfile } from '../../../types/user'; // Adjusted import path
 
 export const Dashboard = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<User | null>(null);
+  
+  const authUser = useSelector((state: RootState) => state.auth.user);
+  // If a more detailed profile is needed and fetched into userProfileSlice:
+  // const userProfile = useSelector((state: RootState) => state.userProfile.profile);
+  // const displayUser = userProfile || authUser; // Prefer more detailed profile if available
 
-  const fetchUserData = useCallback(async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const response = await axios.get('http://localhost:8080/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const { login, phone, name, img } = response.data;
-      setUser({ login, phone, name, img });
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      removeToken();
-      navigate('/login');
-    }
-  }, [navigate]);
-
+  // The user for SidebarFooterProfile will come from authUser.
+  // If fetchUserProfile was dispatched on login and authUser is updated with all necessary fields,
+  // then a separate fetch here might not be needed unless explicit refresh is desired.
+  
+  // Forcing a profile fetch if authUser exists but maybe not detailed enough for footer
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    if (authUser?.login) { // Or based on isAuthenticated
+      // Dispatch fetchUserProfile if you want to ensure the profile in userProfileSlice is fresh
+      // and authUser might be minimal.
+      // dispatch(fetchUserProfile()); 
+    }
+  }, [dispatch, authUser]);
+
+
+  const handleRefreshUser = useCallback(() => {
+    dispatch(fetchUserProfile()); // For the refreshUser prop
+  }, [dispatch]);
 
   // Обработчик выхода
   const handleLogout = () => {
-    removeToken();
-    navigate('/login');
+    dispatch(logoutUser());
+    dispatch(clearUserProfile()); // Clear user profile state
+    // Navigation to /login is typically handled by RequireToken or useEffect watching isAuthenticated
+    navigate(ROUTES.LOGIN); 
   };
 
   // Кастомный роутер для Toolpad
