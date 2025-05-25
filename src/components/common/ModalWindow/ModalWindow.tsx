@@ -2,24 +2,8 @@ import React, { useState } from 'react';
 import { Modal, Box, Typography, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import './styles.css'
-import {theme} from 'src/theme'
-
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  brand?: string;
-  type?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import {theme} from 'src/theme';
+import { Guitar } from 'src/types';
 
 // Тип для пропсов компонента
 interface ModalWindowProps {

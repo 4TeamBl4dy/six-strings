@@ -1,5 +1,12 @@
-import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import axios, { AxiosResponse } from 'axios';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import {
+  fetchSellerProducts,
+  createSellerProduct,
+  updateExistingSellerProduct,
+  deleteExistingSellerProduct
+} from 'src/store/sellerProductSlice';
 import {
   StyledContainer,
   PageTitle,
@@ -21,46 +28,31 @@ import {
 import { Typography, Grid, Box, Container } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { CustomTextField, CustomSelect, CustomFileInput, Loader } from 'src/components';
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  description: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from 'src/types';
 
 export const MyProductsPage = () => {
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch: AppDispatch = useDispatch();
+  const { items: guitars, isLoading: loading, error: reduxError } = useSelector((state: RootState) => state.sellerProducts);
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [editingGuitar, setEditingGuitar] = useState<Guitar | null>(null);
-
-  const [img, setImage] = useState<File | null>(null);
+  const [imgFile, setImgFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [cost, setCost] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('');
   const [brand, setBrand] = useState('');
+  const [formError, setFormError] = useState<string | null>(null); 
 
   const [searchName, setSearchName] = useState('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
 
   const sellerLogin = localStorage.getItem('login') || '';
-  const userName = localStorage.getItem('userName') || '';
-  const userPhone = localStorage.getItem('userPhone') || '';
+  const userName = localStorage.getItem('userName') || ''; 
+  const userPhone = localStorage.getItem('userPhone') || ''; 
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
@@ -71,25 +63,12 @@ export const MyProductsPage = () => {
     { value: 'accessories', label: 'Аксессуары' },
   ];
 
-  // Загрузка товаров продавца
   useEffect(() => {
-    const fetchGuitars = async () => {
-      try {
-        const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        setLoading(true)
-        const sellerGuitars = response.data.filter((guitar) => guitar.seller?.login === sellerLogin);
-        setGuitars(sellerGuitars || []);
-        setLoading(false)
-      } catch (error) {
-        setError('Не удалось загрузить товары.');
-      }
-    };
     if (sellerLogin) {
-      fetchGuitars();
+      dispatch(fetchSellerProducts(sellerLogin));
     }
-  }, [sellerLogin]);
+  }, [dispatch, sellerLogin]);
 
-  // Получение уникальных типов и брендов для фильтров
   const uniqueTypes = Array.from(new Set(guitars.map((g) => g.type))).map((value) => ({
     value,
     label: categories.find((cat) => cat.value === value)?.label || value,
@@ -99,31 +78,27 @@ export const MyProductsPage = () => {
     label: brand,
   }));
 
-  // Сброс формы
   const resetForm = useCallback(() => {
-    setImage(null);
+    setImgFile(null);
     setName('');
     setDescription('');
     setCost('');
     setAmount('');
     setType('');
     setBrand('');
-    setError(null);
+    setFormError(null);
     setEditingGuitar(null);
   }, []);
 
-  // Обработка изменения изображения
   const handleImageChange = useCallback((file: File | null) => {
-    setImage(file);
+    setImgFile(file);
   }, []);
 
-  // Открытие модального окна для добавления
   const handleOpenModal = useCallback(() => {
     resetForm();
     setModalOpen(true);
   }, [resetForm]);
 
-  // Открытие модального окна для редактирования
   const handleEditGuitar = useCallback((guitar: Guitar) => {
     setEditingGuitar(guitar);
     setName(guitar.name);
@@ -132,73 +107,70 @@ export const MyProductsPage = () => {
     setAmount(String(guitar.amount));
     setType(guitar.type);
     setBrand(guitar.brand);
-    setImage(null);
+    setImgFile(null); 
     setModalOpen(true);
   }, []);
 
-  // Закрытие модального окна
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
     resetForm();
   }, [resetForm]);
 
-  // Создание или обновление товара
   const handleSubmit = useCallback(async () => {
-    if (!name || (!img && !editingGuitar) || !description || !cost || !amount || !type || !brand) {
-      setError('Заполните все поля.');
+    if (!name || (!imgFile && !editingGuitar) || !description || !cost || !amount || !type || !brand) {
+      setFormError('Заполните все поля.');
       return;
     }
+    setFormError(null); 
 
-    try {
-      const formData = new FormData();
-      if (img) {
-        formData.append('img', img);
-      } else if (editingGuitar) {
-        formData.append('img', editingGuitar.img);
-      }
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('cost', String(parseFloat(cost)));
-      formData.append('amount', String(parseInt(amount, 10)));
-      formData.append('type', type);
-      formData.append('brand', brand);
-      formData.append('sellerLogin', sellerLogin);
-      formData.append('userName', userName);
-      formData.append('userPhone', userPhone);
-
-      let response: AxiosResponse<Guitar>;
-      if (editingGuitar) {
-        response = await axios.put(`http://localhost:8080/guitars/${editingGuitar._id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        setGuitars((prev) =>
-          prev.map((g) => (g._id === editingGuitar._id ? response.data : g))
-        );
-      } else {
-        response = await axios.post('http://localhost:8080/guitars', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        setGuitars((prev) => [...prev, response.data]);
-      }
-
-      alert('Товар успешно добавлен!')
-      handleCloseModal();
-    } catch (error) {
-      setError('Не удалось сохранить товар.');
+    const formData = new FormData();
+    if (imgFile) {
+      formData.append('img', imgFile);
+    } else if (editingGuitar?.img) {
+      formData.append('img', editingGuitar.img);
     }
-  }, [img, name, description, cost, amount, type, brand, editingGuitar, sellerLogin, userName, userPhone, handleCloseModal]);
+    formData.append('name', name);
+    formData.append('description', description);
+    formData.append('cost', String(parseFloat(cost)));
+    formData.append('amount', String(parseInt(amount, 10)));
+    formData.append('type', type);
+    formData.append('brand', brand);
+    formData.append('sellerLogin', sellerLogin);
+    formData.append('userName', userName);
+    formData.append('userPhone', userPhone);
 
-  // Удаление товара
+    if (editingGuitar) {
+      dispatch(updateExistingSellerProduct({ guitarId: editingGuitar._id, formData }))
+        .unwrap()
+        .then(() => {
+          alert('Товар успешно обновлен!');
+          handleCloseModal();
+        })
+        .catch((updateError) => {
+          setFormError(typeof updateError === 'string' ? updateError : 'Не удалось обновить товар.');
+        });
+    } else {
+      dispatch(createSellerProduct(formData))
+        .unwrap()
+        .then(() => {
+          alert('Товар успешно добавлен!');
+          handleCloseModal();
+        })
+        .catch((createError) => {
+          setFormError(typeof createError === 'string' ? createError : 'Не удалось добавить товар.');
+        });
+    }
+  }, [dispatch, imgFile, name, description, cost, amount, type, brand, editingGuitar, sellerLogin, userName, userPhone, handleCloseModal]);
+
   const handleDeleteGuitar = useCallback(async (guitarId: string) => {
-    try {
-      await axios.delete(`http://localhost:8080/guitars/${guitarId}`);
-      setGuitars((prev) => prev.filter((g) => g._id !== guitarId));
-    } catch (error) {
-      setError('Не удалось удалить товар.');
-    }
-  }, []);
+    dispatch(deleteExistingSellerProduct(guitarId))
+      .unwrap()
+      .then(() => alert('Товар успешно удален!'))
+      .catch((deleteError) => {
+        alert(typeof deleteError === 'string' ? deleteError : 'Не удалось удалить товар.');
+      });
+  }, [dispatch]);
 
-  // Фильтрация и сортировка товаров
   const filteredGuitars = guitars
     .filter((guitar) =>
       guitar.name.toLowerCase().includes(searchName.toLowerCase()) &&
@@ -318,7 +290,8 @@ export const MyProductsPage = () => {
               <CloseIcon fontSize="small" />
             </CloseButton>
           </ModalHeader>
-          {error && <ErrorAlert severity="error">{error}</ErrorAlert>}
+          {formError && <ErrorAlert severity="error">{formError}</ErrorAlert>}
+          {reduxError && <ErrorAlert severity="error">{reduxError}</ErrorAlert>}
           <CustomFileInput onChange={handleImageChange} />
           <CustomTextField
             label="Название"

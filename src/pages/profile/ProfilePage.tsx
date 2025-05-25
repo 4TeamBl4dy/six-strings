@@ -1,104 +1,88 @@
 import { useState, useEffect } from 'react';
 import { Box, Avatar, Button, Typography, Container, InputAdornment } from '@mui/material';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { updateUserThunk, fetchAuthenticatedUserThunk } from 'src/store/authSlice';
 import { Field } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
-import {Loader} from 'src/components'
-
-interface User {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-  password?: string;
-}
+import { Loader } from 'src/components';
+import { User } from 'src/types';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User>({
-    login: '',
-    phone: '',
-    name: '',
-    img: '',
-  });
-  const [initialUser, setInitialUser] = useState<User | null>(null); // Для отслеживания начальных значений
+  const dispatch: AppDispatch = useDispatch();
+  const { user, isLoading, error: authError, isSalerAccount } = useSelector((state: RootState) => state.auth);
+
+  const [loginField, setLoginField] = useState('');
+  const [nameField, setNameField] = useState('');
+  const [phoneField, setPhoneField] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
+  
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
-  const [passwordError, setPasswordError] = useState<boolean>(false);
-  const [confirmPasswordError, setConfirmPasswordError] = useState<boolean>(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string>('');
-  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = useState<string>('');
-  const [loginError, setLoginError] = useState<boolean>(false);
-  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
+  
+  const [loginErrorText, setLoginErrorText] = useState<string>('');
+  const [passwordErrorText, setPasswordErrorText] = useState<string>('');
+  const [confirmPasswordErrorText, setConfirmPasswordErrorText] = useState<string>('');
+  
+  useEffect(() => {
+    if (!user && !isSalerAccount && !isLoading) { 
+      dispatch(fetchAuthenticatedUserThunk());
+    }
+  }, [dispatch, user, isSalerAccount, isLoading]);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      navigate('/login');
-      return;
+    if (user && !isSalerAccount) {
+      setLoginField(user.login);
+      setNameField(user.name || '');
+      setPhoneField(user.phone);
+      setPreview(user.img || null);
     }
+  }, [user, isSalerAccount]);
 
-    axios
-      .get('http://localhost:8080/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then(response => {
-        setLoading(true)
-        const { login, phone, name, img } = response.data;
-        const userData = { login, phone, name: name || '', img: img || '' };
-        setUser(userData);
-        setInitialUser(userData); // Сохраняем начальные значения
-        setPreview(img || null);
-        setLoading(false)
-      })
-      .catch(error => {
-        console.error('Error fetching user data:', error);
-        navigate('/login');
-      });
-  }, [navigate]);
-
-  const handleFieldChange = (name: string) => (value: string) => {
-    setUser(prev => ({ ...prev, [name]: value }));
-    if (name === 'login') {
-      setLoginError(false);
-      setLoginErrorMessage('');
-    }
+  const handleLoginFieldChange = (value: string) => {
+    setLoginField(value);
+    if (loginErrorText) setLoginErrorText('');
   };
 
-  const handlePasswordChange = (name: string) => (value: string) => {
-    if (name === 'newPassword') {
+  const handleNameFieldChange = (value: string) => {
+    setNameField(value);
+  };
+
+  const handlePhoneFieldChange = (value: string) => {
+    setPhoneField(value);
+  };
+  
+  const handlePasswordChange = (fieldName: 'newPassword' | 'confirmPassword') => (value: string) => {
+    if (fieldName === 'newPassword') {
       setNewPassword(value);
       if (!value) {
-        setPasswordError(false);
-        setPasswordErrorMessage('');
+        setPasswordErrorText('');
       } else if (!isStrongPassword(value)) {
-        setPasswordError(true);
-        setPasswordErrorMessage('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.');
+        setPasswordErrorText('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.');
       } else {
-        setPasswordError(false);
-        setPasswordErrorMessage('');
+        setPasswordErrorText('');
       }
-    } else if (name === 'confirmPassword') {
+      // Also validate confirmPassword if newPassword changes and confirmPassword is not empty
+      if (confirmPassword && value !== confirmPassword) {
+        setConfirmPasswordErrorText('Пароли не совпадают.');
+      } else if (confirmPassword && value === confirmPassword) {
+        setConfirmPasswordErrorText('');
+      }
+    } else if (fieldName === 'confirmPassword') {
       setConfirmPassword(value);
       if (!value) {
-        setConfirmPasswordError(false);
-        setConfirmPasswordErrorMessage('');
+        setConfirmPasswordErrorText('');
       } else if (value !== newPassword) {
-        setConfirmPasswordError(true);
-        setConfirmPasswordErrorMessage('Пароли не совпадают.');
+        setConfirmPasswordErrorText('Пароли не совпадают.');
       } else {
-        setConfirmPasswordError(false);
-        setConfirmPasswordErrorMessage('');
+        setConfirmPasswordErrorText('');
       }
     }
   };
@@ -114,65 +98,59 @@ export const ProfilePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
+    setLoginErrorText(''); setPasswordErrorText(''); setConfirmPasswordErrorText('');
 
+    let isValid = true;
+    if (newPassword && !isStrongPassword(newPassword)) {
+        setPasswordErrorText('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.');
+        isValid = false;
+    }
+    if (newPassword && newPassword !== confirmPassword) {
+        setConfirmPasswordErrorText('Пароли не совпадают.');
+        isValid = false;
+    }
+    if (!isValid) return;
+    
     const formData = new FormData();
     let hasChanges = false;
 
-    if (user.login !== initialUser?.login) {
-      formData.append('login', user.login);
-      hasChanges = true;
-    }
-    if (user.name !== initialUser?.name) {
-      formData.append('name', user.name || '');
-      hasChanges = true;
-    }
-    if (user.phone !== initialUser?.phone) {
-      formData.append('phone', user.phone);
-      hasChanges = true;
-    }
-    if (avatarFile) {
-      formData.append('img', avatarFile);
-      hasChanges = true;
-    }
-    if (newPassword) {
-      formData.append('password', newPassword);
-      hasChanges = true;
-    }
+    if (user && loginField !== user.login) { formData.append('login', loginField); hasChanges = true; }
+    if (user && nameField !== (user.name || '')) { formData.append('name', nameField); hasChanges = true; }
+    if (user && phoneField !== user.phone) { formData.append('phone', phoneField); hasChanges = true; }
+    if (avatarFile) { formData.append('img', avatarFile); hasChanges = true; }
+    if (newPassword) { formData.append('password', newPassword); hasChanges = true; }
 
     if (!hasChanges) {
       alert('Нет изменений для сохранения.');
       return;
     }
 
-    try {
-      const response = await axios.put('http://localhost:8080/user', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
+    dispatch(updateUserThunk(formData))
+      .unwrap()
+      .then(() => {
+        alert('Профиль успешно обновлён!');
+        setNewPassword(''); 
+        setConfirmPassword('');
+        setAvatarFile(null);
+      })
+      .catch((updateError: any) => {
+        console.error('Error updating profile:', updateError);
+        if (typeof updateError === 'string') {
+            if (updateError.toLowerCase().includes('login')) {
+                 setLoginErrorText(updateError);
+            } else {
+                alert(`Ошибка обновления: ${updateError}`);
+            }
+        } else {
+          alert('Ошибка при обновлении профиля.');
+        }
       });
-      const updatedUser = response.data;
-      setUser(updatedUser);
-      setInitialUser(updatedUser); // Обновляем начальные значения
-      setPreview(updatedUser.img || null);
-      setAvatarFile(null);
-      setNewPassword('');
-      setConfirmPassword('');
-      if (response.headers.authorization) {
-        localStorage.setItem('access_token', response.headers.authorization.split(' ')[1]);
-      }
-      alert('Профиль успешно обновлён!');
-    } catch (error) {
-      console.error('Error updating profile:')
-    }
   };
 
   const togglePasswordVisibility = () => setShowPassword(prev => !prev);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(prev => !prev);
 
-  if (loading) {
+  if (isLoading || (!user && !isSalerAccount && !isLoading)) {
     return (
       <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
         <Loader />
@@ -195,7 +173,7 @@ export const ProfilePage = () => {
             src={preview || '/broken-image.jpg'}
             sx={{ width: 80, height: 80, bgcolor: '#FF6428' }}
           >
-            {user.login ? user.login[0] : 'U'}
+            {loginField ? loginField[0].toUpperCase() : (user?.login ? user.login[0].toUpperCase() : 'U')}
           </Avatar>
         </Box>
         <Button variant="outlined" component="label" sx={{ borderRadius: '16px' }}>
@@ -209,22 +187,22 @@ export const ProfilePage = () => {
         </Button>
         <Field
           label="Логин"
-          value={user.login}
-          onChange={handleFieldChange('login')}
-          error={loginError}
-          helperText={loginErrorMessage}
+          value={loginField}
+          onChange={handleLoginFieldChange}
+          error={!!loginErrorText || (!!authError && authError.toLowerCase().includes('login'))}
+          helperText={loginErrorText || (authError && authError.toLowerCase().includes('login') ? authError : '')}
           fullWidth
         />
         <Field
           label="Имя"
-          value={user.name || ''}
-          onChange={handleFieldChange('name')}
+          value={nameField}
+          onChange={handleNameFieldChange}
           fullWidth
         />
         <Field
           label="Телефон"
-          value={user.phone}
-          onChange={handleFieldChange('phone')}
+          value={phoneField}
+          onChange={handlePhoneFieldChange}
           fullWidth
         />
         <Field
@@ -232,8 +210,8 @@ export const ProfilePage = () => {
           value={newPassword}
           onChange={handlePasswordChange('newPassword')}
           type={showPassword ? 'text' : 'password'}
-          error={passwordError}
-          helperText={passwordErrorMessage}
+          error={!!passwordErrorText}
+          helperText={passwordErrorText}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -250,8 +228,8 @@ export const ProfilePage = () => {
           value={confirmPassword}
           onChange={handlePasswordChange('confirmPassword')}
           type={showConfirmPassword ? 'text' : 'password'}
-          error={confirmPasswordError}
-          helperText={confirmPasswordErrorMessage}
+          error={!!confirmPasswordErrorText}
+          helperText={confirmPasswordErrorText}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">

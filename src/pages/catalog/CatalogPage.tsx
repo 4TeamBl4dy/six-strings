@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
 import { Typography, Grid, Box, Container } from '@mui/material';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { fetchAllProducts } from 'src/store/productSlice';
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -12,50 +14,25 @@ import {
 } from './styles';
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
 import { theme } from 'src/theme';
-import { ROUTES } from 'src/constants'; 
-import {Loader} from 'src/components'
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { ROUTES } from 'src/constants';
+import { Loader } from 'src/components';
+import { Guitar } from 'src/types';
 
 export const CatalogPage = () => {
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
+  const dispatch: AppDispatch = useDispatch();
+  const { items: guitars, isLoading: loading, error } = useSelector((state: RootState) => state.products);
+
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // Local loading and error states are removed as they are handled by Redux store
 
   const err = 'Нет в наличии';
 
   useEffect(() => {
-    setLoading(true);
-    axios
-      .get('http://localhost:8080/guitars')
-      .then((response: AxiosResponse<Guitar[]>) => {
-        setGuitars(response.data || []);
-        setLoading(false);
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при загрузке товаров:', error);
-        setError('Не удалось загрузить каталог. Попробуйте позже.');
-        setLoading(false);
-      });
-  }, []);
+    dispatch(fetchAllProducts());
+  }, [dispatch]);
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
