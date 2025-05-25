@@ -1,68 +1,33 @@
 import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { fetchStatsThunk } from 'src/store/statsSlice';
 import { Card, CardContent, Container, Typography, Button, Stack } from '@mui/material';
 import Plot from 'react-plotly.js';
-import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { Loader } from 'src/components';
-
-type DetailItem = {
-  date: string;
-  productId: string;
-  productName: string;
-  userId: string;
-  userLogin: string;
-};
-
-type StatItem = {
-  _id: string;
-  total: number;
-};
+import { StatItem, DetailItem } from 'src/api'; // StatItem and DetailItem are used for plot rendering
 
 export const StatsPage = () => {
-  const [basketData, setBasketData] = useState<StatItem[]>([]);
-  const [favoritesData, setFavoritesData] = useState<StatItem[]>([]);
-  const [basketDetails, setBasketDetails] = useState<DetailItem[]>([]);
-  const [favoritesDetails, setFavoritesDetails] = useState<DetailItem[]>([]);
+  const dispatch: AppDispatch = useDispatch();
+  const { basketStats, favoriteStats, basketDetails, favoriteDetails, isLoading, error } = useSelector((state: RootState) => state.stats);
   const [period, setPeriod] = useState<'week' | 'month' | 'halfYear'>('week');
-  const [loading, setLoading] = useState<boolean>(true);
+  // Local error state for issues not covered by Redux error state (e.g. missing sellerLogin)
+  const [localError, setLocalError] = useState<string | null>(null);
+
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          console.error('Токен отсутствует. Пожалуйста, войдите в систему.');
-          setLoading(false);
-          return;
-        }
-
-        setLoading(true);
-        const sellerLogin = localStorage.getItem('login') || '';
-        const response = await axios.get('http://localhost:8080/stats', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: { sellerLogin },
-        });
-
-        const data = response.data;
-        setBasketData(data.basket || []);
-        setFavoritesData(data.favorites || []);
-        setBasketDetails(data.basketDetails || []);
-        setFavoritesDetails(data.favoritesDetails || []);
-        setLoading(false);
-      } catch (error) {
-        console.error('Ошибка при получении статистики:', error);
-        setLoading(false);
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          alert('Ошибка авторизации. Пожалуйста, войдите снова.');
-        }
-      }
-    };
-
-    fetchStats();
-  }, []);
+    const sellerLogin = localStorage.getItem('login') || '';
+    if (sellerLogin) {
+      dispatch(fetchStatsThunk(sellerLogin));
+    } else {
+      console.error("Seller login not found for fetching stats.");
+      setLocalError("Логин продавца не найден. Невозможно загрузить статистику.");
+      // Optionally dispatch an error to Redux store if it should be handled globally
+      // dispatch(setError("Логин продавца не найден.")); 
+    }
+  }, [dispatch]);
 
   const filterDataByPeriod = (
     data: StatItem[],
@@ -141,11 +106,11 @@ export const StatsPage = () => {
   };
 
   const { filteredData: filteredBasketData, filteredDetails: filteredBasketDetails } =
-    filterDataByPeriod(basketData, basketDetails, period);
+    filterDataByPeriod(basketStats, basketDetails, period);
   const { filteredData: filteredFavoritesData, filteredDetails: filteredFavoritesDetails } =
-    filterDataByPeriod(favoritesData, favoritesDetails, period);
+    filterDataByPeriod(favoriteStats, favoritesDetails, period);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Container sx={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
         <Loader />

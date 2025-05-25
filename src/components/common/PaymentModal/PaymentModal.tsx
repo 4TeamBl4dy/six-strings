@@ -16,8 +16,12 @@ import {
   Divider,
   CircularProgress,
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { jsPDF } from 'jspdf';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { processPaymentThunk, resetPaymentState } from 'src/store/paymentSlice';
+// processPayment API function is no longer directly used here
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -52,11 +56,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState<{
-    transactionId: string;
-    date: string;
-  } | null>(null);
+  const dispatch: AppDispatch = useDispatch();
+  const { isLoading: paymentLoading, error: paymentError, paymentSuccessDetails } = useSelector((state: RootState) => state.payment);
+  // const [loading, setLoading] = useState(false); // Replaced by paymentLoading from Redux
+  // const [paymentDetails, setPaymentDetails] = useState<{ // This local state might not be needed if details are in Redux or handled by PDF generation directly
+  //   transactionId: string;
+  //   date: string;
+  // } | null>(null);
 
   const loadFont = async () => {
     const response = await fetch('../../../../public/fonts/roboto-regular.ttf');
@@ -77,73 +83,70 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handlePay = async () => {
     if (!stripe || !elements) return;
 
-    setLoading(true);
+    // setLoading(true); // Handled by Redux thunk
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+        console.error("CardElement not found");
+        return;
+    }
+
     const { error, paymentMethod } = await stripe.createPaymentMethod({
       type: 'card',
-      card: elements.getElement(CardElement)!,
+      card: cardElement,
     });
 
-    if (error) {
-      console.error(error);
-      setLoading(false);
+    if (error || !paymentMethod) {
+      console.error(error || "PaymentMethod not created");
+      // setLoading(false); // Handled by Redux thunk
+      alert(error?.message || "Не удалось обработать данные карты.");
       return;
     }
 
-    try {
-      const res = await fetch('http://localhost:8080/pay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        body: JSON.stringify({
-          amount,
-          paymentMethodId: paymentMethod.id,
-        }),
-      });
-
-      const data = await res.json();
-      setLoading(false);
-
-      if (data.success) {
-        const transactionId = data.transactionId || 'TXN-' + Math.random().toString(36).substr(2, 9);
-        const paymentDate = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
-
-        setPaymentDetails({
-          transactionId,
-          date: paymentDate,
-        });
-
-        // Загружаем и добавляем шрифт
-        const fontData = await loadFont();
-        const doc = new jsPDF();
-        doc.addFileToVFS('Roboto-Regular.ttf', fontData);
-        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-        doc.setFont('Roboto');
-
-        doc.setFontSize(16);
-        doc.text('Чек об оплате', 20, 20);
-        doc.setFontSize(12);
-        doc.text(`Дата и время: ${paymentDate}`, 20, 30);
-        doc.text(`Сумма: ${amount.toFixed(2)} ₸`, 20, 40);
-        doc.text(`ID транзакции: ${transactionId}`, 20, 50);
-        doc.text('Магазин: SixStrings', 20, 60);
-        doc.text('Спасибо за покупку!', 20, 70);
-
-        doc.save(`SixStrings_Receipt_${transactionId}.pdf`);
-
-        onSuccess();
-        alert('Оплата успешно прошла!')
-        onClose();
-      } else {
-        alert('Оплата не удалась');
-      }
-    } catch (error) {
-      console.error('Ошибка при обработке платежа:', error);
-      setLoading(false);
-      alert('Произошла ошибка при обработке платежа');
-    }
+    dispatch(processPaymentThunk({ amount, paymentMethodId: paymentMethod.id }));
   };
+
+  useEffect(() => {
+    const generatePdfAndFinalize = async () => {
+        if (paymentSuccessDetails?.success && paymentSuccessDetails.transactionId) {
+            const transactionId = paymentSuccessDetails.transactionId;
+            const paymentDate = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
+            
+            const fontData = await loadFont();
+            const doc = new jsPDF();
+            doc.addFileToVFS('Roboto-Regular.ttf', fontData);
+            doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+            doc.setFont('Roboto');
+
+            doc.setFontSize(16);
+            doc.text('Чек об оплате', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Дата и время: ${paymentDate}`, 20, 30);
+            doc.text(`Сумма: ${amount.toFixed(2)} ₸`, 20, 40);
+            doc.text(`ID транзакции: ${transactionId}`, 20, 50);
+            doc.text('Магазин: SixStrings', 20, 60);
+            doc.text('Спасибо за покупку!', 20, 70);
+            doc.save(`SixStrings_Receipt_${transactionId}.pdf`);
+            
+            onSuccess();
+            alert('Оплата успешно прошла!');
+            onClose(); // Close modal on success
+            dispatch(resetPaymentState()); // Reset payment state in Redux
+        } else if (paymentSuccessDetails && !paymentSuccessDetails.success) {
+            // Handle case where API returns success:false (but not a network/server error caught by .rejected)
+            alert('Оплата не удалась. Пожалуйста, попробуйте снова.');
+            dispatch(resetPaymentState());
+        } else if (paymentError) {
+            alert('Оплата не удалась: ' + paymentError);
+            dispatch(resetPaymentState());
+            // onClose(); // Optionally close modal on error too, or let user retry
+        }
+    };
+    
+    if (paymentSuccessDetails || paymentError) {
+        generatePdfAndFinalize();
+    }
+  }, [paymentSuccessDetails, paymentError, dispatch, onSuccess, amount, onClose]);
+
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -168,7 +171,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={loading}>
+        <Button onClick={onClose} disabled={paymentLoading}>
           Отмена
         </Button>
         <Button
@@ -176,9 +179,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           onClick={handlePay}
           fullWidth
           sx={{ ml: 1 }}
-          disabled={loading}
+          disabled={paymentLoading || !stripe || !elements} // Disable if stripe/elements not loaded
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Оплатить'}
+          {paymentLoading ? <CircularProgress size={24} color="inherit" /> : 'Оплатить'}
         </Button>
       </DialogActions>
     </Dialog>

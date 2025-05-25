@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios, { AxiosResponse } from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { fetchSellerProducts } from 'src/store/sellerProductSlice';
+import axios from 'axios'; // Keep for seller info fetching until that's moved to Redux/API layer
 import { Typography, Grid, Box, Avatar, Link, Container } from '@mui/material';
 import {
   StyledContainer,
@@ -13,26 +16,11 @@ import {
 import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title, Loader } from 'src/components';
 import { theme } from 'src/theme';
 import { ROUTES } from 'src/constants';
-import {normalizePhoneNumber} from 'src/utils'
+import { normalizePhoneNumber } from 'src/utils';
+import { Guitar } from 'src/types'; // Guitar type is sufficient
 
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-    img?: string;
-  };
-}
-
-interface Seller {
+// Seller interface might be needed if seller info is fetched separately and not part of Guitar type in Redux
+interface SellerInfo {
   login: string;
   name: string;
   phone: string;
@@ -42,46 +30,48 @@ interface Seller {
 export const SalerProductsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch: AppDispatch = useDispatch();
   const queryParams = new URLSearchParams(location.search);
   const sellerLogin = queryParams.get('seller');
 
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
-  const [seller, setSeller] = useState<Seller | null>(null);
+  // Products from Redux store
+  const { items: sellerProducts, isLoading: loading, error } = useSelector((state: RootState) => state.sellerProducts);
+  
+  // Local state for seller info - this could also be moved to Redux if needed elsewhere
+  const [seller, setSeller] = useState<SellerInfo | null>(null);
+  // Local state for filters and sorting
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // Local error state for issues like seller not found, or sellerLogin missing
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const err = 'Нет в наличии';
 
   useEffect(() => {
     if (!sellerLogin) {
-      navigate(ROUTES.CATALOG);
+      navigate(ROUTES.CATALOG); // Or show an error message
+      setLocalError("Логин продавца не указан в URL.");
       return;
     }
+    setLocalError(null); // Clear previous local errors
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const sellerResponse = await axios.get(`http://localhost:8080/saler_info?login=${sellerLogin}`);
-        setSeller(sellerResponse.data);
+    // Fetch seller-specific products
+    dispatch(fetchSellerProducts(sellerLogin));
 
-        const guitarsResponse: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        const allGuitars = guitarsResponse.data || [];
-        const sellerGuitars = allGuitars.filter((guitar) => guitar.seller.login === sellerLogin);
-        setGuitars(sellerGuitars);
-        setLoading(false);
-      } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-        setError('Не удалось загрузить данные. Попробуйте позже.');
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [sellerLogin, navigate]);
+    // Fetch seller info (still using axios for this part as per current structure)
+    // This could be refactored into an API call and potentially a Redux thunk if seller info is complex
+    axios.get(`http://localhost:8080/saler_info?login=${sellerLogin}`)
+      .then(response => {
+        setSeller(response.data);
+      })
+      .catch(err => {
+        console.error('Ошибка при загрузке информации о продавце:', err);
+        setLocalError('Не удалось загрузить информацию о продавце.');
+        setSeller(null); // Ensure seller is null if fetch fails
+      });
+  }, [dispatch, sellerLogin, navigate]);
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
@@ -92,11 +82,11 @@ export const SalerProductsPage = () => {
     { value: 'accessories', label: 'Аксессуары' },
   ];
 
-  const uniqueTypes = Array.from(new Set(guitars.map((g) => g.type))).map((value) => ({
+  const uniqueTypes = Array.from(new Set(sellerProducts.map((g) => g.type))).map((value) => ({
     value,
     label: categories.find((cat) => cat.value === value)?.label || value,
   }));
-  const uniqueBrands = Array.from(new Set(guitars.map((g) => g.brand || ''))).map((brand) => ({
+  const uniqueBrands = Array.from(new Set(sellerProducts.map((g) => g.brand || ''))).map((brand) => ({
     value: brand,
     label: brand,
   }));
@@ -135,9 +125,9 @@ export const SalerProductsPage = () => {
     });
   };
 
-  const sortedAndFilteredGuitars = guitars ? sortAndFilterGuitars(guitars) : [];
+  const sortedAndFilteredGuitars = sellerProducts ? sortAndFilterGuitars(sellerProducts) : [];
 
-  if (loading) {
+  if (loading) { // isLoading from Redux store
     return (
       <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
         <Loader />
@@ -145,12 +135,15 @@ export const SalerProductsPage = () => {
     );
   }
 
-  if (error) {
-    return <div style={{ color: 'red' }}>{error}</div>;
+  if (error) { // error from Redux store
+    return <div style={{ color: 'red', textAlign: 'center', marginTop: '20px' }}>{error}</div>;
+  }
+  if (localError) { // localError for seller info or missing login
+    return <div style={{ color: 'red', textAlign: 'center', marginTop: '20px' }}>{localError}</div>;
   }
 
-  if (!seller) {
-    return <div>Продавец не найден.</div>;
+  if (!seller && !loading) { // If loading is false and seller is still null
+    return <div style={{ textAlign: 'center', marginTop: '20px' }}>Информация о продавце не найдена.</div>;
   }
 
   // Нормализуем номер телефона перед созданием ссылки

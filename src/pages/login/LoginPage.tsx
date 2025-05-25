@@ -1,9 +1,12 @@
 import './styles.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { setToken, fetchToken } from 'src/hooks'; 
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { loginUserThunk, loginSalerThunk } from 'src/store/authSlice';
+// import { setToken, fetchToken } from 'src/hooks'; // fetchToken might be replaced by Redux state, setToken by thunk
 import Logo from '/public/icons/logo.png';
+// import { loginUser, loginSaler } from 'src/api'; // API calls are now in thunks
 import { Box, Typography, InputAdornment } from '@mui/material';
 import { ROUTES } from 'src/constants';
 import { StyledCheckbox } from 'src/components/styledComponents';
@@ -11,97 +14,54 @@ import { Field } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-interface LoginProps {
-  handleSetIsAuth: (token: string) => void;
-}
+// LoginProps is no longer needed as handleSetIsAuth will be removed
+// interface LoginProps {
+//   handleSetIsAuth: (token: string) => void;
+// }
 
-interface LoginResponse {
-  token: string;
-  name: string;
-  phone: string;
-}
+export const Login = (/*{ handleSetIsAuth }: LoginProps*/) => {
+  const dispatch: AppDispatch = useDispatch();
+  const { isLoading, error: authError, isAuthenticated, isSalerAccount } = useSelector((state: RootState) => state.auth);
 
-export const Login = ({ handleSetIsAuth }: LoginProps) => {
-  const [account, setAccount] = useState<boolean>(false);
-  const [login, setLogin] = useState<string>('');
+  const [login, setLoginState] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [admin, setAdmin] = useState<boolean>(false);
+  const [admin, setAdmin] = useState<boolean>(false); // For the checkbox "Войти как продавец"
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<boolean>(false);
-  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<boolean>(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string>('');
+  
+  // Local form validation errors
+  const [loginValidationError, setLoginValidationError] = useState<string>('');
+  const [passwordValidationError, setPasswordValidationError] = useState<string>('');
 
   const navigate = useNavigate();
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     let isValid = true;
+    setLoginValidationError('');
+    setPasswordValidationError('');
 
     if (!login) {
-      setLoginError(true);
-      setLoginErrorMessage('Поле с логином не должно быть пустым.');
+      setLoginValidationError('Поле с логином не должно быть пустым.');
       isValid = false;
-    } else {
-      setLoginError(false);
-      setLoginErrorMessage('');
     }
-
     if (!password) {
-      setPasswordError(true);
-      setPasswordErrorMessage('Поле с паролем не должно быть пустым.');
+      setPasswordValidationError('Поле с паролем не должно быть пустым.');
       isValid = false;
-    } else {
-      setPasswordError(false);
-      setPasswordErrorMessage('');
     }
-
     if (!isValid) return;
 
-    try {
-      const response: AxiosResponse<LoginResponse> = await axios.post(
-        admin ? 'http://localhost:8080/login_saler' : 'http://localhost:8080/login_user',
-        { login: login, password }
-      );
-      const { token, name, phone } = response.data;
-
-      setToken(token);
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userPhone', phone);
-      localStorage.setItem('login', login);
-
-      handleSetIsAuth(token);
-      setName(name);
-      setPhone(phone);
-      setAccount(true);
-      navigate(admin ? ROUTES.SALER_PAGE : ROUTES.HOME_PAGE);
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error(axiosError);
-      if (axiosError.response) {
-        if (axiosError.response.status === 401) {
-          setLoginError(true);
-          setLoginErrorMessage('Пользователь с таким логином не найден');
-        } else if (axiosError.response.status === 402) {
-          setPasswordError(true);
-          setPasswordErrorMessage('Неверный пароль');
-        } else {
-          setLoginError(true);
-          setLoginErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
-          setPasswordError(true);
-          setPasswordErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
-        }
-      } else {
-        setLoginError(true);
-        setLoginErrorMessage('Произошла ошибка сети. Проверьте подключение.');
-        setPasswordError(true);
-        setPasswordErrorMessage('Произошла ошибка сети. Проверьте подключение.');
-      }
+    if (admin) {
+      dispatch(loginSalerThunk({ login, password }));
+    } else {
+      dispatch(loginUserThunk({ login, password }));
     }
   };
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(isSalerAccount ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
+    }
+  }, [isAuthenticated, isSalerAccount, navigate]);
 
   const handleSetAdmin = () => {
     setAdmin((prev) => !prev);
@@ -110,14 +70,6 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
-
-  const auth = fetchToken();
-
-  useEffect(() => {
-    if (auth) {
-      navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
-    }
-  }, [auth, navigate]);
 
   return (
     <div className="Login">
@@ -131,9 +83,9 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
                 sx={{ minWidth: '272px' }}
                 placeholder="Логин"
                 value={login}
-                onChange={(value: string) => setLogin(value)}
-                error={loginError}
-                helperText={loginErrorMessage}
+                onChange={(value: string) => setLoginState(value)}
+                error={!!loginValidationError || (!!authError && !passwordValidationError)} // Show authError on login field if not a password-specific error
+                helperText={loginValidationError || (authError && !passwordValidationError ? authError : '')}
               />
             </div>
             <div className="input-container">
@@ -143,8 +95,8 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
                 value={password}
                 onChange={(value: string) => setPassword(value)}
                 type={showPassword ? 'text' : 'password'}
-                error={passwordError}
-                helperText={passwordErrorMessage}
+                error={!!passwordValidationError || (!!authError && passwordValidationError === '')} // Show authError on password if it's password-specific or general
+                helperText={passwordValidationError || (authError && passwordValidationError === '' ? authError : '')}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -159,7 +111,9 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
             <Typography>
               <StyledCheckbox checked={admin} onChange={handleSetAdmin} />Войти как продавец
             </Typography>
-            <button type="submit">Войти</button>
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? 'Вход...' : 'Войти'}
+            </button>
             <NavLink to={ROUTES.REGISTRATION}>
               <a>Зарегистрироваться</a>
             </NavLink>

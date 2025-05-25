@@ -1,17 +1,20 @@
 import { AppProvider, Navigation } from '@toolpad/core/AppProvider';
 import { DashboardLayout as ToolpadDashboardLayout } from '@toolpad/core/DashboardLayout';
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
+import { useDispatch } from 'react-redux'; // Import useDispatch
+import { AppDispatch } from 'src/store/store'; // Import AppDispatch
+import { logout } from 'src/store/authSlice'; // Import logout action
 import InventoryIcon from '@mui/icons-material/Inventory';
 import StoreIcon from '@mui/icons-material/Store';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import { Breadcrumbs, Title } from '../../';
 import { demoTheme } from './styles';
 import Logo from '/public/icons/smallLogo.png';
-import { ROUTES } from 'src/constants';
+import { ROUTES } from 'src/constants'; // ROUTES is already imported
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
 import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { removeToken } from 'src/hooks';
+import axios from 'axios'; // Keep axios for fetchSalerData for now
+// import { removeToken } from 'src/hooks'; // removeToken is no longer needed
 
 // Навигация для продавца
 const NAVIGATION: Navigation = [
@@ -40,42 +43,42 @@ interface Saler {
 }
 
 export const SalerDashboard = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Already imported
+  const dispatch: AppDispatch = useDispatch(); // Get dispatch
   const location = useLocation();
-  const [saler, setSaler] = useState<Saler | null>(null);
+  const [saler, setSaler] = useState<Saler | null>(null); // Keep saler state for SidebarFooterProfile for now
 
   const fetchSalerData = useCallback(async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
-      navigate('/login');
+      dispatch(logout()); // Dispatch logout if no token
+      navigate(ROUTES.LOGIN);
       return;
     }
 
     try {
+      // Consider moving fetchSalerData to a thunk if saler data is needed globally in Redux
       const response = await axios.get('http://localhost:8080/saler', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const { login, phone, name, img } = response.data;
       setSaler({ login, phone, name, img });
     } catch (error) {
       console.error('Error fetching saler data:', error);
+      dispatch(logout()); // Dispatch logout on error
+      navigate(ROUTES.LOGIN);
     }
-  }, [navigate]);
+  }, [navigate, dispatch]); // Added dispatch to dependencies
 
   useEffect(() => {
     fetchSalerData();
   }, [fetchSalerData]);
 
-  // Обработчик выхода
   const handleLogout = () => {
-    removeToken();
-    localStorage.clear();
-    navigate('/login');
+    dispatch(logout());
+    navigate(ROUTES.LOGIN);
   };
 
-  // Кастомный роутер для Toolpad
   const router = {
     pathname: location.pathname,
     searchParams: new URLSearchParams(location.search),

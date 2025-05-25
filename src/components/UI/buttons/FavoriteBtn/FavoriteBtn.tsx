@@ -1,99 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react'; // Removed useState
 import '../styles.css';
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite'; // For filled heart
+import { Guitar } from 'src/types'; // FavoriteItem is not directly used as prop
+import { AppDispatch, RootState } from 'src/store/store';
+import { addItemToFavoritesThunk, removeItemFromFavoritesThunk, fetchFavoritesThunk } from 'src/store/favoriteSlice';
 
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  amount: number;
-  cost: number;
-}
-
-// Тип для элемента избранного
-interface FavoriteItem {
-  _id: string;
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarAmount: number;
-  guitarCost: number;
-}
-
-// Тип для пропсов компонента
 interface FavoriteBtnProps {
-  guitar: Guitar;
+  guitar: Guitar; // Assuming Guitar type includes _id, img, name, amount, cost
 }
 
 export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
-  const [isInFavorites, setIsInFavorites] = useState<boolean>(false); // Состояние для отслеживания наличия в избранном
+  const dispatch: AppDispatch = useDispatch();
+  const favoriteItems = useSelector((state: RootState) => state.favorites.items);
+  // const isLoading = useSelector((state: RootState) => state.favorites.isLoading); // Optional for button loading state
 
-  // Получаем данные избранного при монтировании компонента
+  const isFavorite = useMemo(() => favoriteItems.some(item => item.guitarId === guitar._id), [favoriteItems, guitar._id]);
+
   useEffect(() => {
-    const fetchFavorites = async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      try {
-        const response: AxiosResponse<FavoriteItem[]> = await axios.get('http://localhost:8080/favorites', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const favoriteItems = response.data || [];
-        const isAlreadyInFavorites = favoriteItems.some((item) => item.guitarId === guitar._id);
-        setIsInFavorites(isAlreadyInFavorites);
-      } catch (error) {
-        console.error('Ошибка при загрузке избранного:', error);
-      }
-    };
-
-    fetchFavorites();
-  }, [guitar._id]);
-
-  const addFavorite = async () => {
-    if (isInFavorites) {
-      alert('Этот товар уже есть в вашем избранном');
-      return;
-    }
-
+    // Fetch favorites if not already loaded or to ensure freshness.
+    // Consider a 'loadedOnce' flag or similar in the slice for more complex scenarios.
     const token = localStorage.getItem('access_token');
+    if (token && favoriteItems.length === 0) { // Only fetch if token exists and favorites are not loaded
+        dispatch(fetchFavoritesThunk());
+    }
+  }, [dispatch, favoriteItems.length]);
 
-    try {
-      const response: AxiosResponse = await axios.post(
-        'http://localhost:8080/favorites',
-        {
+  const handleToggleFavorite = async () => {
+    if (isFavorite) {
+      try {
+        await dispatch(removeItemFromFavoritesThunk(guitar._id)).unwrap();
+        // Optional: show success notification
+      } catch (error: any) {
+        console.error('Ошибка при удалении из избранного:', error);
+        alert(error.message || 'Ошибка при удалении из избранного');
+      }
+    } else {
+      try {
+        await dispatch(addItemToFavoritesThunk({
           guitarId: guitar._id,
           guitarImg: guitar.img,
           guitarName: guitar.name,
-          guitarAmount: guitar.amount,
+          guitarAmount: guitar.amount, // This is the total available amount
           guitarCost: guitar.cost,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      console.log('Товар успешно добавлен в избранное');
-      alert('Товар успешно добавлен в избранное');
-      setIsInFavorites(true); // Обновляем состояние после успешного добавления
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error(axiosError);
-      alert('Ошибка при добавлении товара в избранное');
+        })).unwrap();
+        alert('Товар успешно добавлен в избранное');
+      } catch (error: any) {
+        console.error('Ошибка при добавлении в избранное:', error);
+        alert(error.message || 'Ошибка при добавлении в избранное');
+      }
     }
   };
 
   return (
     <button
       className="favoriteBtn"
-      onClick={addFavorite}
-      disabled={isInFavorites} // Отключаем кнопку, если товар уже в избранном
+      onClick={handleToggleFavorite}
+      // disabled={isLoading} // Optional: disable button while loading
       style={{
-        cursor: isInFavorites ? 'not-allowed' : 'pointer',
-        opacity: isInFavorites ? 0.5 : 1,
+        cursor: 'pointer', // Keep pointer cursor as it's always clickable
+        // opacity: isLoading ? 0.5 : 1, // Optional: change opacity when loading
       }}
     >
-      <FavoriteBorderIcon />
+      {isFavorite ? <FavoriteIcon sx={{color: 'red'}} /> : <FavoriteBorderIcon />}
     </button>
   );
 };

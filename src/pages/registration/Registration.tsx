@@ -1,9 +1,12 @@
 import './styles.css';
-import React, { useState, FormEvent, ChangeEvent } from 'react';
+import React, { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { registerUserThunk, registerSalerThunk } from 'src/store/authSlice';
 import Logo from '/public/icons/logo.png';
 import { Box, Typography, InputAdornment } from '@mui/material';
+// import { registerUser, registerSaler } from 'src/api'; // API calls are now in thunks
 import { PHONE_MASK, ROUTES } from 'src/constants';
 import { StyledCheckbox } from 'src/components/styledComponents';
 import { Field } from 'src/components';
@@ -11,145 +14,66 @@ import { isValidPhone, isStrongPassword } from 'src/constants';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-interface SignUpProps {
-  handleSetIsAuth: (token: string) => void;
-}
+// interface SignUpProps { // No longer needed
+//   handleSetIsAuth: (token: string) => void;
+// }
 
-interface RegisterResponse {
-  token: string;
-  name: string;
-  phone: string;
-}
+export default function Registration(/*{ handleSetIsAuth }: SignUpProps*/) {
+  const dispatch: AppDispatch = useDispatch();
+  const { isLoading, error: authError, isAuthenticated, isSalerAccount } = useSelector((state: RootState) => state.auth);
 
-export default function Registration({ handleSetIsAuth }: SignUpProps) {
-  const [account, setAccount] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
-  const [login, setLogin] = useState<string>('');
+  const [login, setLoginState] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [saler, setSaler] = useState<boolean>(false);
-  const [nameError, setNameError] = useState<boolean>(false);
-  const [nameErrorMessage, setNameErrorMessage] = useState<string>('');
-  const [loginError, setLoginError] = useState<boolean>(false);
-  const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
-  const [phoneError, setPhoneError] = useState<boolean>(false);
-  const [phoneErrorMessage, setPhoneErrorMessage] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<boolean>(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState<string>('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState<boolean>(false);
-  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = useState<string>('');
+  const [saler, setSalerFlag] = useState<boolean>(false);
+  
+  // Local form validation errors
+  const [nameError, setNameError] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+  const [phoneError, setPhoneError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string>('');
+  
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
-  const register = async (e: FormEvent<HTMLFormElement>) => {
+  const handleRegistrationSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     let isValid = true;
+    setNameError(''); setLoginError(''); setPhoneError(''); setPasswordError(''); setConfirmPasswordError('');
 
-    if (!name) {
-      setNameError(true);
-      setNameErrorMessage('Поле с именем не должно быть пустым.');
-      isValid = false;
-    } else {
-      setNameError(false);
-      setNameErrorMessage('');
-    }
-
-    if (!login) {
-      setLoginError(true);
-      setLoginErrorMessage('Поле с логином не должно быть пустым.');
-      isValid = false;
-    } else {
-      setLoginError(false);
-      setLoginErrorMessage('');
-    }
-
-    if (!phone) {
-      setPhoneError(true);
-      setPhoneErrorMessage('Поле с телефоном не должно быть пустым.');
-      isValid = false;
-    } else if (!isValidPhone(phone)) {
-      setPhoneError(true);
-      setPhoneErrorMessage('Неверный формат телефона.');
-      isValid = false;
-    } else {
-      setPhoneError(false);
-      setPhoneErrorMessage('');
-    }
-
-    if (!password) {
-      setPasswordError(true);
-      setPasswordErrorMessage('Поле с паролем не должно быть пустым.');
-      isValid = false;
-    } else if (!isStrongPassword(password)) {
-      setPasswordError(true);
-      setPasswordErrorMessage('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.');
-      isValid = false;
-    } else {
-      setPasswordError(false);
-      setPasswordErrorMessage('');
-    }
-
-    if (!confirmPassword) {
-      setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage('Поле для подтверждения пароля не должно быть пустым.');
-      isValid = false;
-    } else if (confirmPassword !== password) {
-      setConfirmPasswordError(true);
-      setConfirmPasswordErrorMessage('Пароли не совпадают.');
-      isValid = false;
-    } else {
-      setConfirmPasswordError(false);
-      setConfirmPasswordErrorMessage('');
-    }
+    if (!name) { setNameError('Поле с именем не должно быть пустым.'); isValid = false; }
+    if (!login) { setLoginError('Поле с логином не должно быть пустым.'); isValid = false; }
+    if (!phone) { setPhoneError('Поле с телефоном не должно быть пустым.'); isValid = false; }
+    else if (!isValidPhone(phone)) { setPhoneError('Неверный формат телефона.'); isValid = false; }
+    if (!password) { setPasswordError('Поле с паролем не должно быть пустым.'); isValid = false; }
+    else if (!isStrongPassword(password)) { setPasswordError('Пароль должен содержать минимум 8 символов, включая 1 заглавную букву, 1 строчную, 1 цифру и 1 спецсимвол.'); isValid = false; }
+    if (!confirmPassword) { setConfirmPasswordError('Поле для подтверждения пароля не должно быть пустым.'); isValid = false; }
+    else if (confirmPassword !== password) { setConfirmPasswordError('Пароли не совпадают.'); isValid = false; }
 
     if (!isValid) return;
 
-    try {
-      const userData = {
-        login,
-        password,
-        name,
-        phone,
-      };
-
-      const response: AxiosResponse<RegisterResponse> = await axios.post(
-        saler ? 'http://localhost:8080/register_saler' : 'http://localhost:8080/register_user',
-        userData
-      );
-
-      const { token, name: responseName, phone: responsePhone } = response.data;
-      console.log('Ответ сервера:', response.data); // Для отладки
-
-      localStorage.setItem('token', token);
-      localStorage.setItem('login', login);
-      localStorage.setItem('userName', responseName);
-      localStorage.setItem('userPhone', responsePhone);
-      handleSetIsAuth(token);
-      setAccount(true);
-
-      const redirectPath = saler ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE;
-      console.log('Перенаправление на:', redirectPath); // Для отладки
-      navigate(redirectPath);
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error('Ошибка при регистрации:', axiosError);
-      if (axiosError.response?.status === 401) {
-        setLoginError(true);
-        setLoginErrorMessage('Пользователь с таким логином уже зарегистрирован.');
-      } else {
-        setLoginError(true);
-        setLoginErrorMessage('Произошла ошибка. Пожалуйста, попробуйте снова.');
-      }
+    const userData = { login, password, name, phone };
+    if (saler) {
+      dispatch(registerSalerThunk(userData));
+    } else {
+      dispatch(registerUserThunk(userData));
     }
   };
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(isSalerAccount ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
+    }
+  }, [isAuthenticated, isSalerAccount, navigate]);
+
+
   const handleSetSaler = (e: ChangeEvent<HTMLInputElement>) => {
-    setSaler(e.target.checked);
-    console.log('Флаг продавца:', e.target.checked);
+    setSalerFlag(e.target.checked);
   };
 
   const togglePasswordVisibility = () => {
@@ -166,15 +90,15 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
         <img src={Logo} className="logo" alt="Logo" />
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <h3>РЕГИСТРАЦИЯ</h3>
-          <form onSubmit={register} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <form onSubmit={handleRegistrationSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="input-container">
               <Field
                 sx={{ minWidth: '272px' }}
                 placeholder="Имя"
                 value={name}
                 onChange={(value: string) => setName(value)}
-                error={nameError}
-                helperText={nameErrorMessage}
+                error={!!nameError}
+                helperText={nameError}
               />
             </div>
             <div className="input-container">
@@ -182,9 +106,9 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 sx={{ minWidth: '272px' }}
                 placeholder="Логин"
                 value={login}
-                onChange={(value: string) => setLogin(value)}
-                error={loginError}
-                helperText={loginErrorMessage}
+                onChange={(value: string) => setLoginState(value)}
+                error={!!loginError || !!authError} // Show authError (e.g. login taken) on login field
+                helperText={loginError || authError}
               />
             </div>
             <div className="input-container">
@@ -194,8 +118,8 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 value={phone}
                 onChange={(value: string) => setPhone(value)}
                 mask={PHONE_MASK}
-                error={phoneError}
-                helperText={phoneErrorMessage}
+                error={!!phoneError}
+                helperText={phoneError}
               />
             </div>
             <div className="input-container">
@@ -205,8 +129,8 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 value={password}
                 onChange={(value: string) => setPassword(value)}
                 type={showPassword ? 'text' : 'password'}
-                error={passwordError}
-                helperText={passwordErrorMessage}
+                error={!!passwordError}
+                helperText={passwordError}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -225,8 +149,8 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
                 value={confirmPassword}
                 onChange={(value: string) => setConfirmPassword(value)}
                 type={showConfirmPassword ? 'text' : 'password'}
-                error={confirmPasswordError}
-                helperText={confirmPasswordErrorMessage}
+                error={!!confirmPasswordError}
+                helperText={confirmPasswordError}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -239,9 +163,11 @@ export default function Registration({ handleSetIsAuth }: SignUpProps) {
               />
             </div>
             <Typography>
-              <StyledCheckbox checked={saler} onChange={handleSetSaler} />Зарегистрироваться как продавец
+              <StyledCheckbox checked={saler} onChange={(e) => setSalerFlag(e.target.checked)} />Зарегистрироваться как продавец
             </Typography>
-            <button type="submit">Зарегистрироваться</button>
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
+            </button>
             <NavLink to={ROUTES.LOGIN}>
               <a>Войти</a>
             </NavLink>

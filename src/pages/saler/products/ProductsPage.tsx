@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios, { AxiosResponse } from 'axios';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from 'src/store/store';
+import { fetchAllProducts } from 'src/store/productSlice';
+// Removed Axios import as products are fetched via Redux
 import {
   StyledContainer,
   ToolbarWrapper,
@@ -12,48 +15,29 @@ import {
 import { Typography, Grid, Box, Container } from '@mui/material';
 import { ModalWindow, CustomTextField, CustomSelect, Loader } from 'src/components';
 
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from 'src/types';
 
 export const ProductsPage: React.FC = () => {
-  const [guitars, setGuitars] = useState<Guitar[]>([]);
+  const dispatch: AppDispatch = useDispatch();
+  const { items: allProducts, isLoading: loading, error } = useSelector((state: RootState) => state.products);
+  const sellerLogin = localStorage.getItem('login') || '';
+
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const sellerLogin = localStorage.getItem('login') || '';
+  // Local state for guitars, loading, and error are removed
 
   useEffect(() => {
-    setLoading(true);
-    axios.get<Guitar[]>('http://localhost:8080/guitars')
-      .then((response: AxiosResponse<Guitar[]>) => {
-        // Оставляем только товары, не созданные текущим продавцом
-        const otherGuitars = response.data.filter(g => g.seller.login !== sellerLogin);
-        setGuitars(otherGuitars);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Ошибка при загрузке каталога:', err);
-        setError('Не удалось загрузить каталог. Попробуйте позже.');
-        setLoading(false);
-      });
-  }, [sellerLogin]);
+    dispatch(fetchAllProducts());
+  }, [dispatch]);
+
+  const guitars = useMemo(() => {
+    if (sellerLogin) {
+      return allProducts.filter(g => g.seller.login !== sellerLogin);
+    }
+    return allProducts; // Or an empty array if sellerLogin is required but not found for some logic
+  }, [allProducts, sellerLogin]);
 
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
