@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import '../styles.css';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import { useToast } from 'src/components';
 
 // Тип для объекта гитары
 interface Guitar {
@@ -29,6 +30,7 @@ interface FavoriteBtnProps {
 
 export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
   const [isInFavorites, setIsInFavorites] = useState<boolean>(false); // Состояние для отслеживания наличия в избранном
+  const { showToast } = useToast();
 
   // Получаем данные избранного при монтировании компонента
   useEffect(() => {
@@ -53,7 +55,7 @@ export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
 
   const addFavorite = async () => {
     if (isInFavorites) {
-      alert('Этот товар уже есть в вашем избранном');
+      showToast('Этот товар уже есть в вашем избранном', 'info');
       return;
     }
 
@@ -74,12 +76,12 @@ export const FavoriteBtn = ({ guitar }: FavoriteBtnProps) => {
         }
       );
       console.log('Товар успешно добавлен в избранное');
-      alert('Товар успешно добавлен в избранное');
+      showToast('Товар успешно добавлен в избранное', 'success');
       setIsInFavorites(true); // Обновляем состояние после успешного добавления
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error(axiosError);
-      alert('Ошибка при добавлении товара в избранное');
+      showToast('Ошибка при добавлении товара в избранное', 'error');
     }
   };
 

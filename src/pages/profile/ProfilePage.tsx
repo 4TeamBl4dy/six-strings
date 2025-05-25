@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { Box, Avatar, Button, Typography, Container, InputAdornment } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Field } from 'src/components';
+import { Field, useToast, Loader } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
-import {Loader} from 'src/components'
 
 interface User {
   login: string;
@@ -38,6 +37,7 @@ export const ProfilePage = () => {
   const [loginError, setLoginError] = useState<boolean>(false);
   const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -142,7 +142,7 @@ export const ProfilePage = () => {
     }
 
     if (!hasChanges) {
-      alert('Нет изменений для сохранения.');
+      showToast('Нет изменений для сохранения.', 'info');
       return;
     }
 
@@ -163,7 +163,7 @@ export const ProfilePage = () => {
       if (response.headers.authorization) {
         localStorage.setItem('access_token', response.headers.authorization.split(' ')[1]);
       }
-      alert('Профиль успешно обновлён!');
+      showToast('Профиль успешно обновлён!', 'success');
     } catch (error) {
       console.error('Error updating profile:')
     }

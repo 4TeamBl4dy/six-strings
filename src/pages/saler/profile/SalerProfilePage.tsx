@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Avatar, Button, Typography, Container, InputAdornment } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Field, Loader } from 'src/components';
+import { Field, Loader, useToast } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
@@ -37,6 +37,7 @@ export const SalerProfilePage = () => {
   const [loginError, setLoginError] = useState<boolean>(false);
   const [loginErrorMessage, setLoginErrorMessage] = useState<string>('');
   const [loading, setLoading] = useState(true)
+  const { showToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -143,7 +144,7 @@ export const SalerProfilePage = () => {
 
     // Если ничего не изменилось, показываем уведомление и выходим
     if (!hasChanges) {
-      alert('Нет изменений для сохранения.');
+      showToast('Нет изменений для сохранения.', 'info');
       return;
     }
 
@@ -164,7 +165,7 @@ export const SalerProfilePage = () => {
       if (response.headers.authorization) {
         localStorage.setItem('access_token', response.headers.authorization.split(' ')[1]);
       }
-      alert('Профиль продавца успешно обновлён!');
+      showToast('Профиль продавца успешно обновлён!', 'success');
     } catch (error) {
       console.error('Error updating saler profile:')
     }

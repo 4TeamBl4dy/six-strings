@@ -20,7 +20,7 @@ import {
 } from './styles';
 import { Typography, Grid, Box, Container } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { CustomTextField, CustomSelect, CustomFileInput, Loader } from 'src/components';
+import { CustomTextField, CustomSelect, CustomFileInput, Loader, useToast } from 'src/components';
 
 interface Guitar {
   _id: string;
@@ -45,6 +45,7 @@ export const MyProductsPage = () => {
   const [editingGuitar, setEditingGuitar] = useState<Guitar | null>(null);
 
   const [img, setImage] = useState<File | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null); // Для предварительного просмотра
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [cost, setCost] = useState('');
@@ -62,6 +63,8 @@ export const MyProductsPage = () => {
   const userName = localStorage.getItem('userName') || '';
   const userPhone = localStorage.getItem('userPhone') || '';
 
+  const { showToast } = useToast();
+
   const categories = [
     { value: 'electric', label: 'Электрические гитары' },
     { value: 'acoustic', label: 'Акустические гитары' },
@@ -76,10 +79,10 @@ export const MyProductsPage = () => {
     const fetchGuitars = async () => {
       try {
         const response: AxiosResponse<Guitar[]> = await axios.get('http://localhost:8080/guitars');
-        setLoading(true)
+        setLoading(true);
         const sellerGuitars = response.data.filter((guitar) => guitar.seller?.login === sellerLogin);
         setGuitars(sellerGuitars || []);
-        setLoading(false)
+        setLoading(false);
       } catch (error) {
         setError('Не удалось загрузить товары.');
       }
@@ -102,6 +105,7 @@ export const MyProductsPage = () => {
   // Сброс формы
   const resetForm = useCallback(() => {
     setImage(null);
+    setPreviewImageUrl(null); // Сбрасываем предварительный просмотр
     setName('');
     setDescription('');
     setCost('');
@@ -115,6 +119,12 @@ export const MyProductsPage = () => {
   // Обработка изменения изображения
   const handleImageChange = useCallback((file: File | null) => {
     setImage(file);
+    if (file) {
+      const url = URL.createObjectURL(file); // Создаем URL для предварительного просмотра
+      setPreviewImageUrl(url);
+    } else {
+      setPreviewImageUrl(null);
+    }
   }, []);
 
   // Открытие модального окна для добавления
@@ -132,7 +142,8 @@ export const MyProductsPage = () => {
     setAmount(String(guitar.amount));
     setType(guitar.type);
     setBrand(guitar.brand);
-    setImage(null);
+    setImage(null); // Сбрасываем загруженное изображение
+    setPreviewImageUrl(guitar.img); // Устанавливаем URL существующего изображения
     setModalOpen(true);
   }, []);
 
@@ -154,7 +165,7 @@ export const MyProductsPage = () => {
       if (img) {
         formData.append('img', img);
       } else if (editingGuitar) {
-        formData.append('img', editingGuitar.img);
+        formData.append('img', editingGuitar.img); // Сохраняем существующее изображение
       }
       formData.append('name', name);
       formData.append('description', description);
@@ -181,7 +192,7 @@ export const MyProductsPage = () => {
         setGuitars((prev) => [...prev, response.data]);
       }
 
-      alert('Товар успешно добавлен!')
+      showToast('Товар успешно добавлен!', 'success');
       handleCloseModal();
     } catch (error) {
       setError('Не удалось сохранить товар.');
@@ -223,11 +234,11 @@ export const MyProductsPage = () => {
 
   if (loading) {
     return (
-      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+      <Container sx={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
         <Loader />
       </Container>
     );
-  }  
+  }
 
   return (
     <StyledContainer maxWidth="xl">
@@ -236,13 +247,13 @@ export const MyProductsPage = () => {
       {/* Панель инструментов */}
       <ToolbarWrapper>
         <CustomTextField
-          sx={{width: 220}}
+          sx={{ width: 220 }}
           label="Поиск по названию"
           value={searchName}
           onChange={(value: string) => setSearchName(value)}
         />
         <CustomSelect
-          sx={{width: 220}}
+          sx={{ width: 220 }}
           label="Фильтр по типам"
           value={filterTypes}
           onChange={(value: string | string[]) => setFilterTypes(value as string[])}
@@ -250,7 +261,7 @@ export const MyProductsPage = () => {
           multiple
         />
         <CustomSelect
-          sx={{width: 220}}
+          sx={{ width: 220 }}
           label="Фильтр по брендам"
           value={filterBrands}
           onChange={(value: string | string[]) => setFilterBrands(value as string[])}
@@ -258,7 +269,7 @@ export const MyProductsPage = () => {
           multiple
         />
         <CustomSelect
-          sx={{width: 220}}
+          sx={{ width: 220 }}
           label="Сортировка"
           value={sortBy}
           onChange={(value: string | string[]) => setSortBy(value as string[])}
@@ -319,7 +330,15 @@ export const MyProductsPage = () => {
             </CloseButton>
           </ModalHeader>
           {error && <ErrorAlert severity="error">{error}</ErrorAlert>}
-          <CustomFileInput onChange={handleImageChange} />
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight="bold" mb={1}>
+              Изображение товара
+            </Typography>
+            {previewImageUrl && (
+              <GuitarCardMedia image={previewImageUrl} sx={{ height: 200, width: '100%', mb: 2 }} />
+            )}
+            <CustomFileInput onChange={handleImageChange} />
+          </Box>
           <CustomTextField
             label="Название"
             value={name}

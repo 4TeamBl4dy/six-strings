@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
+import { useToast } from 'src/components';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -53,6 +54,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
   const [paymentDetails, setPaymentDetails] = useState<{
     transactionId: string;
     date: string;
@@ -133,15 +135,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         doc.save(`SixStrings_Receipt_${transactionId}.pdf`);
 
         onSuccess();
-        alert('Оплата успешно прошла!')
+        showToast('Оплата успешно прошла!', 'success')
         onClose();
       } else {
-        alert('Оплата не удалась');
+        showToast('Оплата не удалась', error);
       }
     } catch (error) {
       console.error('Ошибка при обработке платежа:', error);
       setLoading(false);
-      alert('Произошла ошибка при обработке платежа');
+      showToast('Произошла ошибка при обработке платежа', 'error');
     }
   };
 

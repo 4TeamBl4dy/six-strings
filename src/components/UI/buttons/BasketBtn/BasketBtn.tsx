@@ -2,6 +2,7 @@ import '../styles.css';
 import {useState, useEffect} from 'react'
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import { useToast } from 'src/components';
 
 // Тип для объекта гитары
 interface Guitar {
@@ -30,6 +31,7 @@ interface BasketBtnProps {
 export const BasketBtn = ({ guitar }: BasketBtnProps) => {
   const isOutOfStock = guitar.amount === 0; // Проверяем, есть ли товар в наличии
   const [isInBasket, setIsInBasket] = useState<boolean>(false); // Состояние для отслеживания наличия в корзине
+  const { showToast } = useToast();
 
   // Получаем данные корзины при монтировании компонента
   useEffect(() => {
@@ -46,6 +48,7 @@ export const BasketBtn = ({ guitar }: BasketBtnProps) => {
         setIsInBasket(isAlreadyInBasket);
       } catch (error) {
         console.error('Ошибка при загрузке корзины:', error);
+        showToast('Ошибка при загрузке корзины:', 'error')
       }
     };
 
@@ -54,12 +57,12 @@ export const BasketBtn = ({ guitar }: BasketBtnProps) => {
 
   const addBasket = async () => {
     if (isOutOfStock) {
-      alert('Товара нет в наличии');
+      showToast('Товара нет в наличии', 'info');
       return;
     }
 
     if (isInBasket) {
-      alert('Этот товар уже есть в вашей корзине');
+      showToast('Этот товар уже есть в вашей корзине', 'info');
       return;
     }
 
@@ -80,12 +83,12 @@ export const BasketBtn = ({ guitar }: BasketBtnProps) => {
         }
       );
       console.log('Товар успешно добавлен в корзину');
-      alert('Товар успешно добавлен в корзину');
+      showToast('Товар успешно добавлен в корзину', 'success');
       setIsInBasket(true); // Обновляем состояние после успешного добавления
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error(axiosError);
-      alert('Ошибка при добавлении товара в корзину');
+      showToast('Ошибка при добавлении товара в корзину', 'error');
     }
   };
 

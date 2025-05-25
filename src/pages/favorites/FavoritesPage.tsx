@@ -13,9 +13,8 @@ import {
   GuitarCardContent,
   ActionButton,
 } from './styles';
-import {Loader} from 'src/components'
+import { Loader } from 'src/components';
 
-// Тип для объекта в избранном
 interface FavoriteItem {
   guitarId: string;
   guitarImg: string;
@@ -24,7 +23,6 @@ interface FavoriteItem {
   guitarAmount: number;
 }
 
-// Тип для элемента корзины
 interface BasketItem {
   guitarId: string;
   guitarImg: string;
@@ -35,7 +33,7 @@ interface BasketItem {
 
 export const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  const [basket, setBasket] = useState<BasketItem[]>([]); // Состояние для корзины
+  const [basket, setBasket] = useState<BasketItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -46,18 +44,21 @@ export const FavoritesPage = () => {
     if (!token) {
       setError('Пожалуйста, войдите в систему.');
       navigate('/login');
+      setLoading(false);
       return;
     }
 
+    setLoading(true);
     axios
       .get('http://localhost:8080/favorites', {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response: AxiosResponse<FavoriteItem[]>) => {
-        setLoading(true)
         setFavorites(response.data || []);
+        setLoading(false);
       })
       .catch((error: AxiosError) => {
+        setLoading(false);
         console.error('Ошибка при загрузке избранного:', error);
         if (error.response?.status === 401) {
           setError('Невалидный токен. Пожалуйста, войдите снова.');
@@ -79,7 +80,6 @@ export const FavoritesPage = () => {
       })
       .then((response: AxiosResponse<BasketItem[]>) => {
         setBasket(response.data || []);
-        setLoading(false)
       })
       .catch((error: AxiosError) => {
         console.error('Ошибка при загрузке корзины:', error);
@@ -93,18 +93,19 @@ export const FavoritesPage = () => {
 
   const addCart = useCallback(
     (guitarId: string, guitarImg: string, guitarName: string, guitarCost: number, guitarAmount: number) => {
-      // Проверяем, есть ли товар уже в корзине
       const isAlreadyInBasket = basket.some((item) => item.guitarId === guitarId);
       if (isAlreadyInBasket) {
         setError('Этот товар уже есть в вашей корзине.');
         return;
       }
 
-      // Проверяем наличие товара
       if (guitarAmount === 0) {
         setError('Товара нет в наличии.');
         return;
       }
+
+      const newBasketItem = { guitarId, guitarImg, guitarName, guitarCost, guitarAmount };
+      setBasket((prev) => [...prev, newBasketItem]);
 
       axios
         .post(
@@ -118,22 +119,19 @@ export const FavoritesPage = () => {
           },
           { headers: { Authorization: `Bearer ${token}` } }
         )
-        .then((response: AxiosResponse) => {
-          console.log('Товар успешно добавлен в корзину:', response.data);
-          setBasket((prev) => [
-            ...prev,
-            { guitarId, guitarImg, guitarName, guitarCost, guitarAmount },
-          ]); // Обновляем состояние корзины
-        })
         .catch((error: AxiosError) => {
           console.error('Ошибка при добавлении в корзину:', error);
           setError('Ошибка при добавлении товара в корзину.');
+          setBasket((prev) => prev.filter((item) => item.guitarId !== guitarId));
         });
     },
     [token, basket]
   );
 
   const removeFavorite = (guitarId: string) => {
+    const prevFavorites = [...favorites];
+    setFavorites(favorites.filter((guitar) => guitar.guitarId !== guitarId));
+
     axios({
       method: 'POST',
       url: 'http://localhost:8080/favorites/delete',
@@ -142,36 +140,44 @@ export const FavoritesPage = () => {
         'X-HTTP-Method-Override': 'DELETE',
       },
       data: { guitarId: guitarId },
-    })
-      .then((response: AxiosResponse) => {
-        setFavorites(favorites.filter((guitar) => guitar.guitarId !== guitarId));
-      })
-      .catch((error: AxiosError) => {
-        console.error('Ошибка при удалении товара из избранного:', error);
-        setError('Ошибка при удалении товара из избранного.');
-      });
+    }).catch((error: AxiosError) => {
+      console.error('Ошибка при удалении товара из избранного:', error);
+      setError('Ошибка при удалении товара из избранного.');
+      setFavorites(prevFavorites);
+    });
   };
 
   const removeAll = () => {
+    const prevFavorites = [...favorites];
+    setFavorites([]);
+
     axios
-      .patch('http://localhost:8080/favorites/delete', null, {
+      .patch('http://localhost:8080/favorites/deleteAll', null, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response: AxiosResponse) => {
-        console.log(response.data);
-        setFavorites([]);
       })
       .catch((error: AxiosError) => {
         console.error('Ошибка при удалении всех товаров из избранного:', error);
         setError('Ошибка при удалении всех товаров из избранного.');
+        setFavorites(prevFavorites);
       });
   };
 
   if (loading) {
     return (
-      <Container sx={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+      <Container sx={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
         <Loader />
       </Container>
+    );
+  }
+
+  if (favorites.length === 0 && !error) {
+    return (
+      <StyledContainer maxWidth="xl">
+        <Typography variant="h5" sx={{ fontWeight: 600, textAlign: 'center', color: '#FF6428', mb: 2 }}>
+          ИЗБРАННОЕ
+        </Typography>
+        <Typography sx={{ textAlign: 'center', marginTop: '20px' }}>Избранное пусто</Typography>
+      </StyledContainer>
     );
   }
 
@@ -181,9 +187,7 @@ export const FavoritesPage = () => {
         ИЗБРАННОЕ
       </Typography>
       {error && <div style={{ color: 'red', marginBottom: '10px', textAlign: 'center' }}>{error}</div>}
-      {favorites.length === 0 && !error ? (
-        <div style={{ textAlign: 'center' }}>Избранное пусто</div>
-      ) : (
+      {favorites.length > 0 && (
         <>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
             <ActionButton onClick={removeAll}>Удалить всё</ActionButton>
@@ -220,7 +224,7 @@ export const FavoritesPage = () => {
                               guitar.guitarAmount
                             )
                           }
-                          disabled={guitar.guitarAmount === 0 || isInBasket} // Отключаем кнопку, если товара нет в наличии или он уже в корзине
+                          disabled={guitar.guitarAmount === 0 || isInBasket}
                           sx={{
                             cursor: guitar.guitarAmount === 0 || isInBasket ? 'not-allowed' : 'pointer',
                             opacity: guitar.guitarAmount === 0 || isInBasket ? 0.5 : 1,

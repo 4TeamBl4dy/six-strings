@@ -4,7 +4,7 @@ import Plot from 'react-plotly.js';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { Loader } from 'src/components';
+import { Loader, useToast } from 'src/components';
 
 type DetailItem = {
   date: string;
@@ -19,13 +19,24 @@ type StatItem = {
   total: number;
 };
 
+type PaymentItem = {
+  _id: string;
+  userId: string;
+  amount: number;
+  transactionId: string;
+  status: string;
+  createdAt: string;
+};
+
 export const StatsPage = () => {
   const [basketData, setBasketData] = useState<StatItem[]>([]);
   const [favoritesData, setFavoritesData] = useState<StatItem[]>([]);
   const [basketDetails, setBasketDetails] = useState<DetailItem[]>([]);
   const [favoritesDetails, setFavoritesDetails] = useState<DetailItem[]>([]);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentItem[]>([]);
   const [period, setPeriod] = useState<'week' | 'month' | 'halfYear'>('week');
   const [loading, setLoading] = useState<boolean>(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -51,12 +62,13 @@ export const StatsPage = () => {
         setFavoritesData(data.favorites || []);
         setBasketDetails(data.basketDetails || []);
         setFavoritesDetails(data.favoritesDetails || []);
+        setPaymentDetails(data.paymentDetails || []);
         setLoading(false);
       } catch (error) {
         console.error('Ошибка при получении статистики:', error);
         setLoading(false);
         if (axios.isAxiosError(error) && error.response?.status === 401) {
-          alert('Ошибка авторизации. Пожалуйста, войдите снова.');
+          showToast('Ошибка авторизации. Пожалуйста, войдите снова.', 'error');
         }
       }
     };
@@ -101,18 +113,49 @@ export const StatsPage = () => {
     return { filteredData: allDates, filteredDetails };
   };
 
+  const filterPaymentsByPeriod = (payments: PaymentItem[], periodType: 'week' | 'month' | 'halfYear') => {
+    const today = new Date();
+    let startDate = new Date(today);
+
+    switch (periodType) {
+      case 'week':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      case 'halfYear':
+        startDate.setMonth(today.getMonth() - 6);
+        break;
+    }
+
+    return payments.filter(payment => {
+      const paymentDate = new Date(payment.createdAt);
+      return paymentDate >= startDate && paymentDate <= today && payment.status === 'succeeded';
+    });
+  };
+
   const getHoverDetails = (date: string, details: DetailItem[]) => {
     const dateDetails = details.filter(item => item.date === date);
-    if (dateDetails.length === 0) return 'Нет данных';
+    if (dateDetails.length === 0) return { title: 'Нет данных', content: [] };
 
-    return dateDetails
-      .map(item => `• Товар: ${item.productName} — Покупатель: ${item.userLogin}`)
-      .join('<br>');
+    return {
+      title: `Детали на ${date}`,
+      content: dateDetails.map(item => ({
+        product: item.productName,
+        buyer: item.userLogin,
+      })),
+    };
   };
 
   const handleExport = () => {
+    const { filteredDetails: filteredBasketDetails } = filterDataByPeriod(basketData, basketDetails, period);
+    const { filteredDetails: filteredFavoritesDetails } = filterDataByPeriod(favoritesData, favoritesDetails, period);
+    const filteredPaymentDetails = filterPaymentsByPeriod(paymentDetails, period);
+
+    // Лист "Корзина"
     const basketSheet = XLSX.utils.json_to_sheet(
-      basketDetails.map(item => ({
+      filteredBasketDetails.map(item => ({
         'Дата': item.date,
         'ID товара': item.productId,
         'Название товара': item.productName,
@@ -121,8 +164,9 @@ export const StatsPage = () => {
       }))
     );
 
+    // Лист "Избранное"
     const favoritesSheet = XLSX.utils.json_to_sheet(
-      favoritesDetails.map(item => ({
+      filteredFavoritesDetails.map(item => ({
         'Дата': item.date,
         'ID товара': item.productId,
         'Название товара': item.productName,
@@ -130,20 +174,50 @@ export const StatsPage = () => {
         'Логин покупателя': item.userLogin,
       }))
     );
+
+    // Лист "Платежи"
+    const paymentSheet = XLSX.utils.json_to_sheet(
+      filteredPaymentDetails.map(item => ({
+        'ID платежа': item._id,
+        'ID покупателя': item.userId,
+        'Сумма': item.amount,
+        'ID транзакции': item.transactionId,
+        'Статус': item.status,
+        'Дата': item.createdAt,
+      }))
+    );
+
+    // Лист "Общая статистика"
+    const totalStatsSheet = XLSX.utils.json_to_sheet([
+      {
+        'Период': period === 'week' ? 'Неделя' : period === 'month' ? 'Месяц' : 'Полгода',
+        'Общий заработок': `${totalEarnings.toFixed(2)} ₸`,
+        'Добавлений в избранное': totalFavorites,
+      },
+    ]);
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, basketSheet, 'Корзина');
     XLSX.utils.book_append_sheet(workbook, favoritesSheet, 'Избранное');
+    XLSX.utils.book_append_sheet(workbook, paymentSheet, 'Платежи');
+    XLSX.utils.book_append_sheet(workbook, totalStatsSheet, 'Общая статистика');
 
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(file, 'Статистика.xlsx');
+    saveAs(file, `Статистика_${period}.xlsx`);
   };
 
   const { filteredData: filteredBasketData, filteredDetails: filteredBasketDetails } =
     filterDataByPeriod(basketData, basketDetails, period);
   const { filteredData: filteredFavoritesData, filteredDetails: filteredFavoritesDetails } =
     filterDataByPeriod(favoritesData, favoritesDetails, period);
+  const filteredPaymentDetails = filterPaymentsByPeriod(paymentDetails, period);
+
+  // Расчет общего заработка на основе платежей
+  const totalEarnings = filteredPaymentDetails.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+  // Расчет общего количества добавлений в избранное
+  const totalFavorites = filteredFavoritesDetails.length;
 
   if (loading) {
     return (
@@ -169,14 +243,28 @@ export const StatsPage = () => {
                 mode: 'lines+markers',
                 name: title,
                 line: { color },
-                marker: { color },
-                hovertemplate: `
-                  <br><b>Дата: %{x}</b>
-                  <br>Кол-во: %{y}
-                  <br>%{customdata}
-                  <extra></extra>
-                `,
-                customdata: data.map(item => getHoverDetails(item._id, details)),
+                marker: { 
+                  color,
+                  size: 8,
+                  line: { width: 1, color: '#ffffff' } // Белая обводка для маркеров
+                },
+                text: data.map(item => {
+                  const hoverInfo = getHoverDetails(item._id, details);
+                  return hoverInfo.content.map((d, i) => `<b>${i === 0 ? hoverInfo.title : ''}</b><br>Товар: ${d.product}<br>Покупатель: ${d.buyer}`).join('<br>');
+                }),
+                hoverinfo: 'text',
+                hoverlabel: {
+                  bgcolor: 'rgba(255, 255, 255, 0.95)', // Полупрозрачный белый фон
+                  bordercolor: 'orange',
+                  font: { 
+                    size: 12, 
+                    color: '#333333', 
+                    family: 'Arial, sans-serif' 
+                  },
+                  align: 'left',
+                  // Градиентный эффект через CSS-стиль (пример)
+                
+                },
               },
             ]}
             layout={{
@@ -198,6 +286,8 @@ export const StatsPage = () => {
                 automargin: true,
               },
               margin: { t: 20, b: 60, l: 60, r: 20 },
+              plot_bgcolor: '#f5f7fa', // Светлый фон графика
+              paper_bgcolor: '#f5f7fa', // Фон всего контейнера
               dragmode: false,
             }}
             config={{ displayModeBar: false }}
@@ -228,6 +318,17 @@ export const StatsPage = () => {
             Скачать в Excel
           </Button>
         </Stack>
+      </Stack>
+
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} sx={{ paddingX: 2, paddingBottom: 2 }}>
+        <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: '48%' }}>
+          <Typography variant="h6">Общий заработок</Typography>
+          <Typography variant="h6" color="orange">{totalEarnings.toFixed(2)} ₸</Typography>
+        </Card>
+        <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: '48%' }}>
+          <Typography variant="h6">Добавлений в избранное</Typography>
+          <Typography variant="h6" color="red">{totalFavorites}</Typography>
+        </Card>
       </Stack>
 
       {filteredBasketData.length === 0 && filteredFavoritesData.length === 0 ? (
