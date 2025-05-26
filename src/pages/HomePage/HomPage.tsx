@@ -31,23 +31,7 @@ import {
 } from './styles';
 import { Typography, Box, Grid, Container } from '@mui/material';
 import {ROUTES} from 'src/constants'
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  brand: string;
-  type: string;
-  description: string;
-  popularity: number; 
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from 'src/types';
 
 export const HomePage = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);

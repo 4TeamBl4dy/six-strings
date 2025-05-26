@@ -14,22 +14,7 @@ import {
   ActionButton,
 } from './styles';
 import { Loader } from 'src/components';
-
-interface FavoriteItem {
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarCost: number;
-  guitarAmount: number;
-}
-
-interface BasketItem {
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarCost: number;
-  guitarAmount: number;
-}
+import { BasketItem, FavoriteItem } from 'src/types';
 
 export const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);

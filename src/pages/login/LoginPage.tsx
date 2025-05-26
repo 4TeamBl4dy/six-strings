@@ -10,16 +10,7 @@ import { StyledCheckbox } from 'src/components/styledComponents';
 import { Field } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-
-interface LoginProps {
-  handleSetIsAuth: (token: string) => void;
-}
-
-interface LoginResponse {
-  token: string;
-  name: string;
-  phone: string;
-}
+import { LoginProps, LoginResponse } from 'src/types';
 
 export const Login = ({ handleSetIsAuth }: LoginProps) => {
   const [account, setAccount] = useState<boolean>(false);

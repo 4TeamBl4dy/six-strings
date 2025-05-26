@@ -13,6 +13,7 @@ import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
 import { useEffect, useState, useCallback } from 'react';
 import { removeToken } from 'src/hooks';
 import axios from 'axios';
+import { User } from 'src/types';
 
 // Навигация
 const NAVIGATION: Navigation = [
@@ -37,13 +38,6 @@ const NAVIGATION: Navigation = [
     icon: <ShoppingCart />,
   },
 ];
-
-interface User {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-}
 
 export const Dashboard = () => {
   const navigate = useNavigate();

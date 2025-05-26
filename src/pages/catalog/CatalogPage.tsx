@@ -14,22 +14,7 @@ import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Tit
 import { theme } from 'src/theme';
 import { ROUTES } from 'src/constants'; 
 import {Loader} from 'src/components'
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from 'src/types';
 
 export const CatalogPage = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);

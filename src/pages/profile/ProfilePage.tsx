@@ -6,14 +6,7 @@ import { Field, useToast, Loader } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
-
-interface User {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-  password?: string;
-}
+import { User } from 'src/types';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();

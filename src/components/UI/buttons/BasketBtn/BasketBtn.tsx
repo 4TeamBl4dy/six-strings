@@ -3,25 +3,7 @@ import {useState, useEffect} from 'react'
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import { useToast } from 'src/components';
-
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  amount: number;
-  cost: number;
-}
-
-// Тип для элемента корзины
-interface BasketItem {
-  _id: string;
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarAmount: number;
-  guitarCost: number;
-}
+import { BasketItem, Guitar } from 'src/types';
 
 // Тип для пропсов компонента
 interface BasketBtnProps {

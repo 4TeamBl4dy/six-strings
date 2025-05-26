@@ -1,5 +1,5 @@
 import './styles.css';
-import React, { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, FormEvent, ChangeEvent } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import Logo from '/public/icons/logo.png';
@@ -10,16 +10,7 @@ import { Field } from 'src/components';
 import { isValidPhone, isStrongPassword } from 'src/constants';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-
-interface SignUpProps {
-  handleSetIsAuth: (token: string) => void;
-}
-
-interface RegisterResponse {
-  token: string;
-  name: string;
-  phone: string;
-}
+import { RegisterResponse, SignUpProps } from 'src/types';
 
 export default function Registration({ handleSetIsAuth }: SignUpProps) {
   const [account, setAccount] = useState<boolean>(false);

@@ -3,25 +3,7 @@ import '../styles.css';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { useToast } from 'src/components';
-
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  amount: number;
-  cost: number;
-}
-
-// Тип для элемента избранного
-interface FavoriteItem {
-  _id: string;
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarAmount: number;
-  guitarCost: number;
-}
+import { FavoriteItem, Guitar } from 'src/types';
 
 // Тип для пропсов компонента
 interface FavoriteBtnProps {

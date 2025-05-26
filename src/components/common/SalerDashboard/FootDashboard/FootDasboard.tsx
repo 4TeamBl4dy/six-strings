@@ -3,21 +3,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from 'src/constants';
+import { SidebarFooterSalerProps } from 'src/types';
 
-interface Saler {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-}
-
-interface SidebarFooterProfileProps {
-  user: Saler | null;
-  onLogout: () => void;
-  refreshUser: () => void;
-}
-
-export const SidebarFooterProfile = ({ user, onLogout, refreshUser }: SidebarFooterProfileProps) => {
+export const SidebarFooterProfile = ({ user, onLogout, refreshUser }: SidebarFooterSalerProps) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);

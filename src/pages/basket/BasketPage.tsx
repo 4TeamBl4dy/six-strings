@@ -6,7 +6,6 @@ import { handleImageError } from 'src/utils';
 import {
   BasketContainer,
   BasketTitle,
-  DeleteAllButton,
   GuitarItem,
   GuitarImage,
   CountButton,
@@ -16,17 +15,9 @@ import {
   BuyButton,
   GuitarName,
 } from './styles';
-import { Box, Typography, Container } from '@mui/material';
+import { Box, Typography, Container, Button } from '@mui/material';
 import { PaymentModalWrapper, Loader } from 'src/components';
-
-interface BasketItem {
-  guitarId: string;
-  guitarImg: string;
-  guitarName: string;
-  guitarCost: number;
-  guitarCount: number;
-  guitarAmount: number;
-}
+import { BasketItem } from 'src/types';
 
 export const Basket = () => {
   const [basket, setBasket] = useState<BasketItem[]>([]);
@@ -163,6 +154,7 @@ export const Basket = () => {
     <BasketContainer>
       <BasketTitle variant="h4">КОРЗИНА</BasketTitle>
       {error && <Typography color="error">{error}</Typography>}
+      <Button color={'error'} onClick={removeAll}>Очистить корзину</Button>
       {basket.map((guitar) => (
         <GuitarItem key={guitar.guitarId}>
           <GuitarImage src={guitar.guitarImg} alt={guitar.guitarName} onError={handleImageError} />

@@ -1,32 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, Container, Typography, Button, Stack } from '@mui/material';
-import Plot from 'react-plotly.js';
+import { useEffect, useState } from 'react';
+import { Card, Container, Typography, Button, Stack } from '@mui/material';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-import { Loader, useToast } from 'src/components';
-
-type DetailItem = {
-  date: string;
-  productId: string;
-  productName: string;
-  userId: string;
-  userLogin: string;
-};
-
-type StatItem = {
-  _id: string;
-  total: number;
-};
-
-type PaymentItem = {
-  _id: string;
-  userId: string;
-  amount: number;
-  transactionId: string;
-  status: string;
-  createdAt: string;
-};
+import { Loader, renderPlot, useToast } from 'src/components';
+import { DetailItem, StatItem, PaymentItem } from 'src/types';
+import { handleExport } from 'src/hooks'; 
 
 export const StatsPage = () => {
   const [basketData, setBasketData] = useState<StatItem[]>([]);
@@ -135,78 +112,6 @@ export const StatsPage = () => {
     });
   };
 
-  const getHoverDetails = (date: string, details: DetailItem[]) => {
-    const dateDetails = details.filter(item => item.date === date);
-    if (dateDetails.length === 0) return { title: 'Нет данных', content: [] };
-
-    return {
-      title: `Детали на ${date}`,
-      content: dateDetails.map(item => ({
-        product: item.productName,
-        buyer: item.userLogin,
-      })),
-    };
-  };
-
-  const handleExport = () => {
-    const { filteredDetails: filteredBasketDetails } = filterDataByPeriod(basketData, basketDetails, period);
-    const { filteredDetails: filteredFavoritesDetails } = filterDataByPeriod(favoritesData, favoritesDetails, period);
-    const filteredPaymentDetails = filterPaymentsByPeriod(paymentDetails, period);
-
-    // Лист "Корзина"
-    const basketSheet = XLSX.utils.json_to_sheet(
-      filteredBasketDetails.map(item => ({
-        'Дата': item.date,
-        'ID товара': item.productId,
-        'Название товара': item.productName,
-        'ID покупателя': item.userId,
-        'Логин покупателя': item.userLogin,
-      }))
-    );
-
-    // Лист "Избранное"
-    const favoritesSheet = XLSX.utils.json_to_sheet(
-      filteredFavoritesDetails.map(item => ({
-        'Дата': item.date,
-        'ID товара': item.productId,
-        'Название товара': item.productName,
-        'ID покупателя': item.userId,
-        'Логин покупателя': item.userLogin,
-      }))
-    );
-
-    // Лист "Платежи"
-    const paymentSheet = XLSX.utils.json_to_sheet(
-      filteredPaymentDetails.map(item => ({
-        'ID платежа': item._id,
-        'ID покупателя': item.userId,
-        'Сумма': item.amount,
-        'ID транзакции': item.transactionId,
-        'Статус': item.status,
-        'Дата': item.createdAt,
-      }))
-    );
-
-    // Лист "Общая статистика"
-    const totalStatsSheet = XLSX.utils.json_to_sheet([
-      {
-        'Период': period === 'week' ? 'Неделя' : period === 'month' ? 'Месяц' : 'Полгода',
-        'Общий заработок': `${totalEarnings.toFixed(2)} ₸`,
-        'Добавлений в избранное': totalFavorites,
-      },
-    ]);
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, basketSheet, 'Корзина');
-    XLSX.utils.book_append_sheet(workbook, favoritesSheet, 'Избранное');
-    XLSX.utils.book_append_sheet(workbook, paymentSheet, 'Платежи');
-    XLSX.utils.book_append_sheet(workbook, totalStatsSheet, 'Общая статистика');
-
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(file, `Статистика_${period}.xlsx`);
-  };
-
   const { filteredData: filteredBasketData, filteredDetails: filteredBasketDetails } =
     filterDataByPeriod(basketData, basketDetails, period);
   const { filteredData: filteredFavoritesData, filteredDetails: filteredFavoritesDetails } =
@@ -219,6 +124,38 @@ export const StatsPage = () => {
   // Расчет общего количества добавлений в избранное
   const totalFavorites = filteredFavoritesDetails.length;
 
+  // Подсчет самого продаваемого товара
+  const basketProductCounts: { [key: string]: { count: number; name: string } } = {};
+  filteredBasketDetails.forEach(item => {
+    if (!basketProductCounts[item.productId]) {
+      basketProductCounts[item.productId] = { count: 0, name: item.productName };
+    }
+    basketProductCounts[item.productId].count += 1;
+  });
+
+  const mostSoldProduct = Object.values(basketProductCounts).length > 0
+    ? Object.values(basketProductCounts).reduce((a, b) => (a.count > b.count ? a : b)).name
+    : 'Нет данных';
+
+  // Подсчет самых популярных товаров в избранном
+  const favoritesProductCounts: { [key: string]: { count: number; name: string } } = {};
+  filteredFavoritesDetails.forEach(item => {
+    if (!favoritesProductCounts[item.productId]) {
+      favoritesProductCounts[item.productId] = { count: 0, name: item.productName };
+    }
+    favoritesProductCounts[item.productId].count += 1;
+  });
+
+  let topFavorites: string[] = [];
+  if (Object.values(favoritesProductCounts).length > 0) {
+    const maxFavoritesCount = Math.max(...Object.values(favoritesProductCounts).map(item => item.count));
+    topFavorites = Object.values(favoritesProductCounts)
+      .filter(item => item.count === maxFavoritesCount)
+      .map(item => item.name);
+  } else {
+    topFavorites = ['Нет данных'];
+  }
+
   if (loading) {
     return (
       <Container sx={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
@@ -226,77 +163,6 @@ export const StatsPage = () => {
       </Container>
     );
   }
-
-  const renderPlot = (title: string, data: StatItem[], details: DetailItem[], color: string) => (
-    <Card sx={{ mb: 4, boxShadow: 3, borderRadius: 3, backgroundColor: '#fafafa', width: '100%' }}>
-      <CardContent sx={{ padding: 0 }}>
-        <Typography variant="h6" fontSize="16px" gutterBottom sx={{ paddingX: 2, paddingTop: 2 }}>
-          {title}
-        </Typography>
-        <div style={{ width: '100%', overflow: 'hidden', paddingLeft: '20px' }}>
-          <Plot
-            data={[
-              {
-                x: data.map(item => item._id),
-                y: data.map(item => item.total),
-                type: 'scatter',
-                mode: 'lines+markers',
-                name: title,
-                line: { color },
-                marker: { 
-                  color,
-                  size: 8,
-                  line: { width: 1, color: '#ffffff' } // Белая обводка для маркеров
-                },
-                text: data.map(item => {
-                  const hoverInfo = getHoverDetails(item._id, details);
-                  return hoverInfo.content.map((d, i) => `<b>${i === 0 ? hoverInfo.title : ''}</b><br>Товар: ${d.product}<br>Покупатель: ${d.buyer}`).join('<br>');
-                }),
-                hoverinfo: 'text',
-                hoverlabel: {
-                  bgcolor: 'rgba(255, 255, 255, 0.95)', // Полупрозрачный белый фон
-                  bordercolor: 'orange',
-                  font: { 
-                    size: 12, 
-                    color: '#333333', 
-                    family: 'Arial, sans-serif' 
-                  },
-                  align: 'left',
-                  // Градиентный эффект через CSS-стиль (пример)
-                
-                },
-              },
-            ]}
-            layout={{
-              height: 400,
-              autosize: true,
-              xaxis: {
-                title: { text: 'Дата', font: { size: 14 } },
-                type: 'date',
-                fixedrange: true,
-                tickformat: '%Y-%m-%d',
-                automargin: true,
-              },
-              yaxis: {
-                title: { text: 'Количество', font: { size: 14 } },
-                tickformat: '.0f',
-                range: [0, Math.max(...data.map(d => d.total || 0), 1) * 1.2],
-                fixedrange: true,
-                dtick: 1,
-                automargin: true,
-              },
-              margin: { t: 20, b: 60, l: 60, r: 20 },
-              plot_bgcolor: '#f5f7fa', // Светлый фон графика
-              paper_bgcolor: '#f5f7fa', // Фон всего контейнера
-              dragmode: false,
-            }}
-            config={{ displayModeBar: false }}
-            style={{ width: '100%' }}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <Container maxWidth={false} sx={{ mt: 1, width: '100%', padding: 0 }}>
@@ -314,21 +180,54 @@ export const StatsPage = () => {
           <Button variant={period === 'halfYear' ? 'contained' : 'outlined'} onClick={() => setPeriod('halfYear')}>
             Полгода
           </Button>
-          <Button variant="contained" color="primary" onClick={handleExport}>
+          <Button variant="contained" color="primary" onClick={() =>
+            handleExport(
+              basketData,
+              favoritesData,
+              basketDetails,
+              favoritesDetails,
+              paymentDetails,
+              period,
+              totalEarnings,
+              totalFavorites,
+              mostSoldProduct,
+              topFavorites,
+              filterDataByPeriod,
+              filterPaymentsByPeriod
+            )
+          }>
             Скачать в Excel
           </Button>
         </Stack>
       </Stack>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} sx={{ paddingX: 2, paddingBottom: 2 }}>
-        <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: '48%' }}>
-          <Typography variant="h6">Общий заработок</Typography>
-          <Typography variant="h6" color="orange">{totalEarnings.toFixed(2)} ₸</Typography>
-        </Card>
-        <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: '48%' }}>
-          <Typography variant="h6">Добавлений в избранное</Typography>
-          <Typography variant="h6" color="red">{totalFavorites}</Typography>
-        </Card>
+      <Stack direction="column" spacing={2} mb={2} sx={{ paddingX: 2, paddingBottom: 2 }}>
+        <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center" sx={{ gap: 2 }}>
+          <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: { xs: '100%', sm: '48%', md: '48%' } }}>
+            <Typography variant="h6">Общий заработок</Typography>
+            <Typography variant="h6" color="orange">{totalEarnings.toFixed(2)} ₸</Typography>
+          </Card>
+          <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: { xs: '100%', sm: '48%', md: '48%' } }}>
+            <Typography variant="h6">Добавлений в избранное</Typography>
+            <Typography variant="h6" color="red">{totalFavorites}</Typography>
+          </Card>
+        </Stack>
+        <Stack direction="row" flexWrap="wrap" justifyContent="space-between" alignItems="center" sx={{ gap: 2 }}>
+          <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: { xs: '100%', sm: '48%', md: '48%' } }}>
+            <Typography variant="h6">Самый продаваемый товар</Typography>
+            <Typography variant="h6" color="orange">{mostSoldProduct}</Typography>
+          </Card>
+          <Card sx={{ p: 2, boxShadow: 1, borderRadius: 2, width: { xs: '100%', sm: '48%', md: '48%' } }}>
+            <Typography variant="h6">Популярный в избранном</Typography>
+            <Stack>
+              {topFavorites.map((item, index) => (
+                <Typography key={index} variant="h6" color="red">
+                  {item}
+                </Typography>
+              ))}
+            </Stack>
+          </Card>
+        </Stack>
       </Stack>
 
       {filteredBasketData.length === 0 && filteredFavoritesData.length === 0 ? (

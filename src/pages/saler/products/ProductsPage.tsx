@@ -11,22 +11,7 @@ import {
 } from './styles';
 import { Typography, Grid, Box, Container } from '@mui/material';
 import { ModalWindow, CustomTextField, CustomSelect, Loader } from 'src/components';
-
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  type: string;
-  brand?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
+import { Guitar } from 'src/types';
 
 export const ProductsPage: React.FC = () => {
   const [guitars, setGuitars] = useState<Guitar[]>([]);

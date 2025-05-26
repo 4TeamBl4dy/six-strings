@@ -19,15 +19,9 @@ import {
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { useToast } from 'src/components';
+import { PaymentModalProps } from 'src/types';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
-interface PaymentModalProps {
-  open: boolean;
-  onClose: () => void;
-  amount: number;
-  onSuccess: () => void;
-}
 
 const CARD_ELEMENT_OPTIONS = {
   style: {

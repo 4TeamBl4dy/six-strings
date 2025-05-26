@@ -3,28 +3,7 @@ import { Modal, Box, Typography, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import './styles.css'
 import {theme} from 'src/theme'
-
-// Тип для объекта гитары
-interface Guitar {
-  _id: string;
-  img: string;
-  name: string;
-  cost: number;
-  amount: number;
-  brand?: string;
-  type?: string;
-  description?: string;
-  seller: {
-    login: string;
-    name: string;
-    phone: string;
-  };
-}
-
-// Тип для пропсов компонента
-interface ModalWindowProps {
-  guitar: Guitar;
-}
+import { ModalWindowProps } from 'src/types';
 
 export const ModalWindow = ({ guitar }: ModalWindowProps) => {
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);

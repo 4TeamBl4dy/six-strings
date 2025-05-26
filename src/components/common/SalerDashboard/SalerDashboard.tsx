@@ -12,6 +12,7 @@ import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
 import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { removeToken } from 'src/hooks';
+import { Saler } from 'src/types';
 
 // Навигация для продавца
 const NAVIGATION: Navigation = [
@@ -31,13 +32,6 @@ const NAVIGATION: Navigation = [
     icon: <BarChartIcon />,
   },
 ];
-
-interface Saler {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-}
 
 export const SalerDashboard = () => {
   const navigate = useNavigate();

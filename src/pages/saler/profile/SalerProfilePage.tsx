@@ -6,14 +6,7 @@ import { Field, Loader, useToast } from 'src/components';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { isStrongPassword } from 'src/constants';
-
-interface Saler {
-  login: string;
-  phone: string;
-  name?: string;
-  img?: string;
-  password?: string;
-}
+import { Saler } from 'src/types';
 
 export const SalerProfilePage = () => {
   const navigate = useNavigate();
