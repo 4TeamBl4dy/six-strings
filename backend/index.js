@@ -14,7 +14,12 @@ const app = express();
 const port = 3941;
 
 // Middleware
-app.use(cors());
+app.use(
+    cors({
+        origin: process.env.NODE_ENV === 'production' ? 'http://localhost:3940' : 'http://localhost:3000',
+        credentials: true,
+    })
+);
 app.use(express.json());
 
 // Подключение маршрутов
