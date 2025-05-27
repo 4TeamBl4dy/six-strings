@@ -144,7 +144,8 @@ export const ModalButton = styled(Button)(({ theme }) => ({
   color: theme.palette.common.white,
   borderRadius: '6px',
   padding: theme.spacing(0.75, 2),
-  fontSize: '0.875rem',
+  px: 0.5,
+  fontSize: '12px',
   '&:hover': {
     backgroundColor: '#d15321',
   },

@@ -22,6 +22,13 @@ const breadcrumbRoutes: BreadcrumbRoute[] = [
   { path: ROUTES.SALER_PAGE, name: 'Продавец' },
   { path: ROUTES.SALER_PROFILE, name: 'Профиль' },
   { path: ROUTES.SALER_PRODUCTS, name: 'Страница продавца' },
+  { path: '/category', name: '' },
+  { path: '/category/electric', name: 'Электронитары' },
+  { path: '/category/acoustic', name: 'Акустические гитары' },
+  { path: '/category/classic', name: 'Классически гитары' },
+  { path: '/category/bass', name: 'Басс гитары' },
+  { path: '/category/combo', name: 'Комбоусилители' },
+  { path: '/category/accessories', name: 'Аксессуары' },
 ];
 
 export const Breadcrumbs: React.FC = () => {

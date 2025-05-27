@@ -2,7 +2,7 @@
     border: none;
     background: none;
     padding: 0;
-    margin: 0 10px 0 0;
+    margin: 0 2px 0 0;
     cursor: pointer;
     opacity: 0.5;
     transition: 0.5s;
@@ -22,8 +22,14 @@
     width: 25px;
     height: 25px;
     padding: 0;
-    margin: 0 10px 0 0;
+    margin: 0 2px 0 0;
     cursor: pointer;
     opacity: 0.5;
     transition: 0.5s;
+}
+
+.favoriteBtn:disabled {
+  color: #ff4d4d;
+  opacity: 1 !important;
+  cursor: not-allowed;
 }

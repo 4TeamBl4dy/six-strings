@@ -2,7 +2,7 @@ import { AppProvider, Navigation } from '@toolpad/core/AppProvider';
 import { DashboardLayout as ToolpadDashboardLayout } from '@toolpad/core/DashboardLayout';
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
-import Contacts from '@mui/icons-material/Contacts';
+import ImportContactsIcon from '@mui/icons-material/ImportContacts';
 import Favorite from '@mui/icons-material/Favorite';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
 import { Breadcrumbs, Title } from '../../';
@@ -12,7 +12,6 @@ import { ROUTES } from 'src/constants';
 import { SidebarFooterProfile } from './FootDashboard/FootDasboard';
 import { useEffect, useState, useCallback } from 'react';
 import { removeToken } from 'src/hooks';
-import axios from 'axios';
 import { User } from 'src/types';
 import apiClient from 'src/api';
 
@@ -26,7 +25,7 @@ const NAVIGATION: Navigation = [
     {
         segment: 'catalog',
         title: 'Каталог',
-        icon: <Contacts />,
+        icon: <ImportContactsIcon />,
     },
     {
         segment: 'favorites',

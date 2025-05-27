@@ -50,29 +50,29 @@ export const ModalWindow = ({ guitar }: ModalWindowProps) => {
             alt={guitar.name}
           />
           <Box className="ModalInfo">
-            <Typography id="modal-title" variant="h5" component="h2">
+            <Typography id="modal-title" variant="h6" component="h2">
               {guitar.name}
             </Typography>
             <Typography sx={{color: theme.palette.primary.main}}>{guitar.seller.login}</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Typography variant="h6">Цена:</Typography>
-              <Typography sx={{mt: 0.7}}>{guitar.cost}тг</Typography>
+              <Typography fontSize={'17px'} fontWeight={600}>Цена:</Typography>
+              <Typography sx={{mt: 0.2}}>{guitar.cost}тг</Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Typography variant="h6">В наличии:</Typography>
-              <Typography sx={{mt: 0.7}}>{guitar.amount}шт</Typography>
+              <Typography fontSize={'17px'} fontWeight={600}>В наличии:</Typography>
+              <Typography sx={{mt: 0.2}}>{guitar.amount}шт</Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Typography variant="h6">Бренд:</Typography>
-              <Typography sx={{mt: 0.7}}>{guitar.brand}</Typography>
+              <Typography fontSize={'17px'} fontWeight={600}>Бренд:</Typography>
+              <Typography sx={{mt: 0.2}}>{guitar.brand}</Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Typography variant="h6">Тип:</Typography>
-              <Typography sx={{mt: 0.7}}>{guitar.type}</Typography>
+              <Typography fontSize={'17px'} fontWeight={600}>Тип:</Typography>
+              <Typography sx={{mt: 0.2}}>{guitar.type}</Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Typography variant="h6">Описание:</Typography>
-              <Typography sx={{mt: 0.7}}>{guitar.description}</Typography>
+              <Typography fontSize={'17px'} fontWeight={600}>Описание:</Typography>
+              <Typography sx={{mt: 0.2}}>{guitar.description}</Typography>
             </Box>
           </Box>
         </Box>

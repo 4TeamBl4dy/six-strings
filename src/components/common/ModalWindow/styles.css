@@ -17,6 +17,8 @@
     left: 50%;
     transform: translate(-50%, -50%);
     width: 800px;
+    max-height: 700px;
+    overflow-y: auto;
     box-shadow: 24;
     padding: 20px 40px;
     border-radius: 2;

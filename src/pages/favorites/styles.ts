@@ -1,5 +1,5 @@
 import { styled } from '@mui/material/styles';
-import { Box, Container, Typography, Button, Card, CardMedia, CardContent, Grid, Modal, Alert, IconButton } from '@mui/material';
+import { Box, Container, Typography, Button, Card, CardMedia, CardContent, Grid, Modal, Alert, IconButton, colors } from '@mui/material';
 
 export const StyledContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(4),
@@ -101,6 +101,9 @@ export const ActionButton = styled(Button)(({ theme }) => ({
   '&:hover': {
     backgroundColor: '#d15321',
   },
+  ':disabled': {
+    color: 'white'
+  }
 }));
 
 export const StyledModal = styled(Modal)(({ theme }) => ({

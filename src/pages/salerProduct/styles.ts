@@ -88,7 +88,7 @@ export const GuitarCardContent = styled(CardContent)(({ theme }) => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'space-between',
+  gap: 1
 }));
 
 export const ActionButton = styled(Button)(({ theme }) => ({

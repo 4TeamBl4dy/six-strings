@@ -176,17 +176,17 @@ export const CatalogPage = () => {
                                         <Typography variant="body2" color="text.secondary">
                                             {guitar.cost}₸
                                         </Typography>
-                                        {guitar.amount === 0 && (
-                                            <Typography variant="body2" color="error.main">
-                                                {err}
-                                            </Typography>
-                                        )}
                                     </Box>
                                     <Box display="flex" mt={1}>
                                         <BasketBtn guitar={guitar} />
                                         <FavoriteBtn guitar={guitar} />
                                         <ModalWindow guitar={guitar} />
                                     </Box>
+                                    {guitar.amount === 0 && (
+                                            <Typography variant="body2" color="error.main">
+                                                {err}
+                                            </Typography>
+                                        )}
                                 </GuitarCardContent>
                             </GuitarCard>
                         </Grid>

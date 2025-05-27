@@ -150,16 +150,16 @@ export const HomePage = () => {
                                     <Typography variant="body2" color="text.secondary">
                                         {guitar.cost}₸
                                     </Typography>
-                                    {guitar.amount === 0 && (
-                                        <Typography variant="body2" color="error.main">
-                                            Нет в наличии
-                                        </Typography>
-                                    )}
                                     <Box display="flex" mt={1}>
                                         <BasketBtn guitar={guitar} />
                                         <FavoriteBtn guitar={guitar} />
                                         <ModalWindow guitar={guitar} />
                                     </Box>
+                                    {guitar.amount === 0 && (
+                                        <Typography variant="body2" color="error.main" mt={0.5}>
+                                            Нет в наличии
+                                        </Typography>
+                                    )}
                                 </GuitarCardContent>
                             </GuitarCard>
                         ))}

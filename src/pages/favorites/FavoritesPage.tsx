@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Grid, Box, Container } from '@mui/material';
+import { Typography, Grid, Box, Container, Button } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { handleImageError } from 'src/utils';
@@ -214,9 +214,9 @@ export const FavoritesPage = () => {
                                                 >
                                                     <AddShoppingCartIcon />
                                                 </ActionButton>
-                                                <ActionButton onClick={() => removeFavorite(guitar.guitarId)}>
+                                                <Button onClick={() => removeFavorite(guitar.guitarId)} color='error'>
                                                     <DeleteIcon />
-                                                </ActionButton>
+                                                </Button>
                                             </Box>
                                         </GuitarCardContent>
                                     </GuitarCard>

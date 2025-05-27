@@ -18,7 +18,7 @@ import {
     ModalButtonWrapper,
     ErrorAlert,
 } from './styles';
-import { Typography, Grid, Box, Container } from '@mui/material';
+import { Typography, Grid, Box, Container, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { CustomTextField, CustomSelect, CustomFileInput, Loader, useToast } from 'src/components';
 import apiClient from 'src/api';
@@ -324,8 +324,8 @@ export const MyProductsPage = () => {
                                     )}
                                 </Box>
                                 <Box display="flex" gap={1} mt={1}>
-                                    <ActionButton onClick={() => handleEditGuitar(guitar)}>Изменить</ActionButton>
-                                    <ActionButton onClick={() => handleDeleteGuitar(guitar._id)}>Удалить</ActionButton>
+                                    <ModalButton onClick={() => handleEditGuitar(guitar)}>Изменить</ModalButton>
+                                    <Button sx={{fontSize: '12px'}} color={'error'} onClick={() => handleDeleteGuitar(guitar._id)}>Удалить</Button>
                                 </Box>
                             </GuitarCardContent>
                         </GuitarCard>
@@ -381,7 +381,7 @@ export const MyProductsPage = () => {
                     <CustomTextField label="Бренд" value={brand} onChange={(value: string) => setBrand(value)} />
                     <ModalButtonWrapper>
                         <ModalButton onClick={handleSubmit}>{editingGuitar ? 'Сохранить' : 'Добавить'}</ModalButton>
-                        <ModalButton onClick={handleCloseModal}>Отменить</ModalButton>
+                        <Button onClick={handleCloseModal} sx={{fontSize: '12px'}} color={'error'}>Отменить</Button>
                     </ModalButtonWrapper>
                 </ModalContent>
             </StyledModal>
