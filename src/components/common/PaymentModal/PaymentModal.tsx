@@ -144,6 +144,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ open, onClose, amount, onSu
         }
     };
 
+    if (!stripe || !elements) {
+        return (
+            <Dialog open={open} onClose={onClose}>
+                <DialogContent>
+                    <Typography>Загрузка платежной формы...</Typography>
+                    <CircularProgress />
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
             <DialogTitle>Оплата заказа</DialogTitle>

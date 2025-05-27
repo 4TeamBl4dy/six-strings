@@ -12,6 +12,7 @@ COPY vite.config.ts .
 COPY tsconfig.json .
 COPY tsconfig.app.json .
 COPY tsconfig.node.json .
+COPY .env.local .
 
 RUN npm run build
 
