@@ -14,13 +14,7 @@ const app = express();
 const port = 3941;
 
 // Middleware
-
-app.use(
-    cors({
-        origin: process.env.NODE_ENV === 'production' ? 'https://six-strings.makkenzo.com' : 'http://localhost:3000',
-        credentials: true,
-    })
-);
+app.use(cors());
 app.use(express.json());
 
 // Подключение маршрутов
