@@ -46,19 +46,29 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ open, onClose, amount, onSu
     } | null>(null);
 
     const loadFont = async () => {
-        const response = await fetch('../../../../public/fonts/roboto-regular.ttf');
-        const arrayBuffer = await response.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
+        try {
+            const response = await fetch('/fonts/Roboto-Regular.ttf');
+            const arrayBuffer = await response.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
 
-        // Преобразуем Uint8Array в Base64
-        let binary = '';
-        const len = uint8Array.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(uint8Array[i]);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch font: ${response.status} ${response.statusText}`);
+            }
+
+            // Преобразуем Uint8Array в Base64
+            let binary = '';
+            const len = uint8Array.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(uint8Array[i]);
+            }
+            const base64String = btoa(binary);
+
+            return base64String;
+        } catch (error) {
+            console.error('Error loading font:', error);
+            showToast('Не удалось загрузить шрифт для PDF. Чек будет сгенерирован со стандартным шрифтом.', 'warning');
+            return null;
         }
-        const base64String = btoa(binary);
-
-        return base64String;
     };
 
     const handlePay = async () => {
