@@ -17,6 +17,7 @@ import { useToast } from 'src/components';
 import { PaymentModalProps } from 'src/types';
 import apiClient from 'src/api';
 
+console.log('Stripe Public Key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY.slice(0, 15));
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const CARD_ELEMENT_OPTIONS = {
@@ -62,7 +63,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ open, onClose, amount, onSu
     };
 
     const handlePay = async () => {
-        if (!stripe || !elements) return;
+        if (!stripe || !elements) {
+            console.error('Stripe.js has not yet loaded.');
+            // Можно показать пользователю сообщение или просто выйти
+            return;
+        }
 
         setLoading(true);
         console.log('Creating payment method...');
