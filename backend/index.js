@@ -8,10 +8,10 @@ const salerRoutes = require('./routes/salerRoutes');
 const basketRoutes = require('./routes/basketRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
 const guitarsRoutes = require('./routes/guitarsRoutes');
-const statsRoutes = require('./routes/statsRoutes')
+const statsRoutes = require('./routes/statsRoutes');
 
 const app = express();
-const port = 8080;
+const port = 3941;
 
 // Middleware
 app.use(cors());
@@ -23,6 +23,6 @@ app.use(salerRoutes);
 app.use(basketRoutes);
 app.use(favoritesRoutes);
 app.use(guitarsRoutes);
-app.use(statsRoutes)
+app.use(statsRoutes);
 
 app.listen(port, () => console.log(`Server running at http://localhost:${port}`));

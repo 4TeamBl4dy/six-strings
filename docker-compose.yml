@@ -8,4 +8,14 @@ services:
         restart: always
         container_name: six-strings
         env_file:
-            - .env.local
+            - .env
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        ports:
+            - '3941:3941'
+        container_name: six-strings-backend
+        restart: unless-stopped
+        env_file:
+            - ./backend/.env

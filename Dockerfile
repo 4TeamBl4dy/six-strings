@@ -3,10 +3,15 @@ FROM node:lts-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-
 RUN npm ci
 
-COPY . .
+COPY public ./public
+COPY src ./src
+COPY index.html .
+COPY vite.config.ts .
+COPY tsconfig.json .
+COPY tsconfig.app.json .
+COPY tsconfig.node.json .
 
 RUN npm run build
 
