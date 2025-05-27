@@ -170,44 +170,50 @@ export const StatsPage = () => {
 
     return (
         <Container maxWidth={false} sx={{ mt: 1, width: '100%', padding: 0 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} sx={{ paddingX: 2 }}>
-                <Typography variant="h6" fontWeight="bold">
+            <Stack
+                direction={{ xs: 'column', lg: 'row' }}
+                justifyContent={{ xs: 'flex-start', lg: 'space-between' }}
+                alignItems={{ xs: 'flex-start', md: 'center' }}
+                mb={2}
+                sx={{ paddingX: 2, gap: { xs: 2, lg: 0 } }}
+                >
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: { xs: 2, lg: 0 } }}>
                     Статистика по продажам и добавлений в избранное
                 </Typography>
                 <Stack direction="row" spacing={1}>
                     <Button variant={period === 'week' ? 'contained' : 'outlined'} onClick={() => setPeriod('week')}>
-                        Неделя
+                    Неделя
                     </Button>
                     <Button variant={period === 'month' ? 'contained' : 'outlined'} onClick={() => setPeriod('month')}>
-                        Месяц
+                    Месяц
                     </Button>
                     <Button
-                        variant={period === 'halfYear' ? 'contained' : 'outlined'}
-                        onClick={() => setPeriod('halfYear')}
+                    variant={period === 'halfYear' ? 'contained' : 'outlined'}
+                    onClick={() => setPeriod('halfYear')}
                     >
-                        Полгода
+                    Полгода
                     </Button>
                     <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() =>
-                            handleExport(
-                                basketData,
-                                favoritesData,
-                                basketDetails,
-                                favoritesDetails,
-                                paymentDetails,
-                                period,
-                                totalEarnings,
-                                totalFavorites,
-                                mostSoldProduct,
-                                topFavorites,
-                                filterDataByPeriod,
-                                filterPaymentsByPeriod
-                            )
-                        }
+                    variant="contained"
+                    color="primary"
+                    onClick={() =>
+                        handleExport(
+                        basketData,
+                        favoritesData,
+                        basketDetails,
+                        favoritesDetails,
+                        paymentDetails,
+                        period,
+                        totalEarnings,
+                        totalFavorites,
+                        mostSoldProduct,
+                        topFavorites,
+                        filterDataByPeriod,
+                        filterPaymentsByPeriod
+                        )
+                    }
                     >
-                        Скачать в Excel
+                    Скачать в Excel
                     </Button>
                 </Stack>
             </Stack>
