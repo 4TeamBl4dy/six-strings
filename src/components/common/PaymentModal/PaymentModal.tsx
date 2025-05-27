@@ -17,7 +17,6 @@ import { useToast } from 'src/components';
 import { PaymentModalProps } from 'src/types';
 import apiClient from 'src/api';
 
-console.log('Stripe Public Key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY.slice(0, 15));
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const CARD_ELEMENT_OPTIONS = {
