@@ -13,7 +13,7 @@ const statsRoutes = require('./routes/statsRoutes');
 const app = express();
 const port = 3941;
 
-const whitelist = ['http://localhost:3940', 'https://six-strings.makkenzo.com'];
+const whitelist = ['http://localhost:3940', 'http://localhost:5173', 'https://six-strings.makkenzo.com'];
 const corsOptions = {
     origin: function (origin, callback) {
         if (!origin || whitelist.indexOf(origin) !== -1) {
