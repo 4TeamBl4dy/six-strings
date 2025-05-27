@@ -1,0 +1,11 @@
+services:
+    six-strings:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - '3940:80'
+        restart: always
+        container_name: six-strings
+        env_file:
+            - .env.local
