@@ -65,18 +65,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ open, onClose, amount, onSu
         if (!stripe || !elements) return;
 
         setLoading(true);
+        console.log('Creating payment method...');
         const { error, paymentMethod } = await stripe.createPaymentMethod({
             type: 'card',
             card: elements.getElement(CardElement)!,
         });
 
         if (error) {
-            console.error(error);
+            console.error('Error creating payment method:', error);
             setLoading(false);
             return;
         }
 
+        console.log('Payment method created:', paymentMethod);
+
         try {
+            console.log('Sending payment request to server...');
             const res = await apiClient.post(
                 '/pay',
                 {
@@ -91,9 +95,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ open, onClose, amount, onSu
                 }
             );
 
+            console.log('Response from server:', res.data);
+
             setLoading(false);
 
             if (res.data.success) {
+                console.log('Payment successful!');
                 const transactionId = res.data.transactionId || 'TXN-' + Math.random().toString(36).substr(2, 9);
                 const paymentDate = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
 
@@ -123,10 +130,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ open, onClose, amount, onSu
                 showToast('Оплата успешно прошла!', 'success');
                 onClose();
             } else {
+                console.log('Payment not successful...');
                 showToast('Оплата не удалась', 'error');
             }
         } catch (error) {
-            console.error('Ошибка при обработке платежа:', error);
+            console.error('Error handling payment:', error);
             setLoading(false);
             showToast('Произошла ошибка при обработке платежа', 'error');
         }
