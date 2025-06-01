@@ -15,10 +15,7 @@ if (!dbUri || !dbName) {
 
 const connectToDb = async () => {
   try {
-    const client = await MongoClient.connect(dbUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const client = new MongoClient(dbUri);
     const db = client.db(dbName);
     return { client, db };
   } catch (error) {
