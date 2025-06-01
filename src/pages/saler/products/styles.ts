@@ -58,51 +58,6 @@ export const ProductsGrid = styled(Grid)(({ theme }) => ({
   },
 }));
 
-export const GuitarCard = styled(Card)(({ theme }) => ({
-  minWidth: theme.breakpoints.down('sm') ? '160px' : '200px',
-  maxWidth: '180px',
-  flexShrink: 0,
-  marginTop: theme.spacing(1),
-  marginBottom: theme.spacing(3),
-  marginLeft: theme.spacing(2),
-  marginRight: theme.spacing(2),
-  borderRadius: theme.spacing(2),
-  display: 'flex',
-  flexDirection: 'column',
-  height: '360px',
-  overflow: 'hidden',
-  [theme.breakpoints.down('sm')]: {
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    maxWidth: '160px',
-    height: '340px',
-  },
-}));
-
-export const GuitarCardMedia = styled(CardMedia)({
-  height: '200px',
-});
-
-export const GuitarCardContent = styled(CardContent)(({ theme }) => ({
-  padding: '12px',
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-}));
-
-export const ActionButton = styled(Button)(({ theme }) => ({
-  backgroundColor: '#FF6428',
-  color: theme.palette.common.white,
-  borderRadius: '5px',
-  fontSize: '0.75rem',
-  padding: theme.spacing(0.5, 1),
-  marginRight: theme.spacing(1),
-  '&:hover': {
-    backgroundColor: '#d15321',
-  },
-}));
-
 export const StyledModal = styled(Modal)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',

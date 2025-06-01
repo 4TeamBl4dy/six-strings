@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { Typography, Grid, Box, Container } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { AxiosResponse, AxiosError } from 'axios';
+import { Grid, Container } from '@mui/material';
 import {
     StyledContainer,
     ToolbarWrapper,
     ProductsGrid,
-    GuitarCard,
-    GuitarCardMedia,
-    GuitarCardContent,
 } from './styles';
-import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title } from 'src/components';
-import { theme } from 'src/theme';
-import { ROUTES } from 'src/constants';
+// BasketBtn, FavoriteBtn, ModalWindow removed below
+import { CustomTextField, CustomSelect, Title, ProductCard } from 'src/components';
 import { Loader } from 'src/components';
 import { Guitar } from 'src/types';
 import apiClient from 'src/api';
@@ -156,39 +151,8 @@ export const CatalogPage = () => {
                     <div>Товары не найдены</div>
                 ) : (
                     sortedAndFilteredGuitars.map((guitar) => (
-                        <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3}>
-                            <GuitarCard>
-                                <GuitarCardMedia image={guitar.img} />
-                                <GuitarCardContent>
-                                    <Box>
-                                        <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                            {guitar.name}
-                                        </Typography>
-                                        <Typography
-                                            variant="body2"
-                                            color={theme.palette.primary.main}
-                                            component={Link}
-                                            to={`${ROUTES.SALER_PRODUCTS}?seller=${guitar.seller.login}`}
-                                            sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                                        >
-                                            {guitar.seller.login}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {guitar.cost}₸
-                                        </Typography>
-                                    </Box>
-                                    <Box display="flex" mt={1}>
-                                        <BasketBtn guitar={guitar} />
-                                        <FavoriteBtn guitar={guitar} />
-                                        <ModalWindow guitar={guitar} />
-                                    </Box>
-                                    {guitar.amount === 0 && (
-                                            <Typography variant="body2" color="error.main">
-                                                {err}
-                                            </Typography>
-                                        )}
-                                </GuitarCardContent>
-                            </GuitarCard>
+                        <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <ProductCard guitar={guitar} actionType="customer" />
                         </Grid>
                     ))
                 )}

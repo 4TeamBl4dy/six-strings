@@ -1,145 +1,52 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { Typography, Grid, Box, Container, Button } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { handleImageError } from 'src/utils';
 import { StyledContainer, ProductsGrid, GuitarCard, GuitarCardMedia, GuitarCardContent, ActionButton } from './styles';
-import { Loader } from 'src/components';
-import { BasketItem, FavoriteItem } from 'src/types';
-import apiClient from 'src/api';
+import { Loader, useToast } from 'src/components'; // useToast might be needed if context actions show toasts
+import { useFavorites, useBasket } from 'src/contexts';
+import { Guitar, FavoriteItem } from 'src/types'; // Guitar is needed for addToBasket
 
 export const FavoritesPage = () => {
-    const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-    const [basket, setBasket] = useState<BasketItem[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    const {
+        favoriteItems,
+        loading: favoritesLoading,
+        error: favoritesError,
+        removeFromFavorites,
+        clearFavorites,
+    } = useFavorites();
+    const { addToBasket, isItemInBasket, loading: basketLoading } = useBasket();
+    // const { showToast } = useToast(); // Uncomment if you need to show additional toasts here
 
-    const token = localStorage.getItem('access_token');
-    const navigate = useNavigate();
+    // Overall loading state can depend on both, or primarily favorites
+    const loading = favoritesLoading || basketLoading;
 
-    const fetchFavorites = useCallback(() => {
-        if (!token) {
-            setError('Пожалуйста, войдите в систему.');
-            navigate('/login');
-            setLoading(false);
-            return;
-        }
+    // For displaying a general error message, prioritize favorites error or create a combined one
+    const error = favoritesError; // Simple approach: show favorites error if present
 
-        setLoading(true);
-        apiClient
-            .get('/favorites', {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((response: AxiosResponse<FavoriteItem[]>) => {
-                setFavorites(response.data || []);
-                setLoading(false);
-            })
-            .catch((error: AxiosError) => {
-                setLoading(false);
-                console.error('Ошибка при загрузке избранного:', error);
-                if (error.response?.status === 401) {
-                    setError('Невалидный токен. Пожалуйста, войдите снова.');
-                    navigate('/login');
-                } else if (error.response?.status === 404) {
-                    setError('Избранное не найдено.');
-                } else {
-                    setError('Произошла ошибка при загрузке избранного.');
-                }
-            });
-    }, [token, navigate]);
-
-    const fetchBasket = useCallback(() => {
-        if (!token) return;
-
-        apiClient
-            .get('/basket', {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((response: AxiosResponse<BasketItem[]>) => {
-                setBasket(response.data || []);
-            })
-            .catch((error: AxiosError) => {
-                console.error('Ошибка при загрузке корзины:', error);
-            });
-    }, [token]);
-
-    useEffect(() => {
-        fetchFavorites();
-        fetchBasket();
-    }, [fetchFavorites, fetchBasket]);
-
-    const addCart = useCallback(
-        (guitarId: string, guitarImg: string, guitarName: string, guitarCost: number, guitarAmount: number) => {
-            const isAlreadyInBasket = basket.some((item) => item.guitarId === guitarId);
-            if (isAlreadyInBasket) {
-                setError('Этот товар уже есть в вашей корзине.');
-                return;
-            }
-
-            if (guitarAmount === 0) {
-                setError('Товара нет в наличии.');
-                return;
-            }
-
-            const newBasketItem = { guitarId, guitarImg, guitarName, guitarCost, guitarAmount };
-            setBasket((prev) => [...prev, newBasketItem]);
-
-            apiClient
-                .post(
-                    '/basket',
-                    {
-                        guitarId,
-                        guitarImg,
-                        guitarName,
-                        guitarCost,
-                        guitarAmount,
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                )
-                .catch((error: AxiosError) => {
-                    console.error('Ошибка при добавлении в корзину:', error);
-                    setError('Ошибка при добавлении товара в корзину.');
-                    setBasket((prev) => prev.filter((item) => item.guitarId !== guitarId));
-                });
-        },
-        [token, basket]
-    );
-
-    const removeFavorite = (guitarId: string) => {
-        const prevFavorites = [...favorites];
-        setFavorites(favorites.filter((guitar) => guitar.guitarId !== guitarId));
-
-        apiClient({
-            method: 'POST',
-            url: '/favorites/delete',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'X-HTTP-Method-Override': 'DELETE',
-            },
-            data: { guitarId: guitarId },
-        }).catch((error: AxiosError) => {
-            console.error('Ошибка при удалении товара из избранного:', error);
-            setError('Ошибка при удалении товара из избранного.');
-            setFavorites(prevFavorites);
-        });
+    // The Guitar type might be slightly different from FavoriteItem.
+    // addToBasket expects a Guitar object. We need to map FavoriteItem to Guitar.
+    // This assumes FavoriteItem contains all necessary fields of Guitar or can be easily mapped.
+    // If not, the Guitar type might need to be fetched separately or FavoriteItem enriched.
+    const handleAddCart = (favItem: FavoriteItem) => {
+        // Map FavoriteItem to Guitar. This is a placeholder mapping.
+        // Ensure all required fields for addToBasket are present.
+        const guitarForBasket: Guitar = {
+            _id: favItem.guitarId, // Assuming guitarId in FavoriteItem maps to _id in Guitar
+            name: favItem.guitarName,
+            img: favItem.guitarImg,
+            cost: favItem.guitarCost,
+            amount: favItem.guitarAmount, // This might be tricky if FavoriteItem doesn't store current amount
+            // Add other fields like description, type, brand, seller if they are part of Guitar and needed by addToBasket
+            // For example, if addToBasket internally checks guitar.description
+            description: '', // Placeholder
+            type: '', // Placeholder
+            brand: '', // Placeholder
+            seller: { login: '', name: '', phone: '' }, // Placeholder
+        };
+        addToBasket(guitarForBasket);
     };
 
-    const removeAll = () => {
-        const prevFavorites = [...favorites];
-        setFavorites([]);
-
-        apiClient
-            .patch('/favorites/deleteAll', null, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .catch((error: AxiosError) => {
-                console.error('Ошибка при удалении всех товаров из избранного:', error);
-                setError('Ошибка при удалении всех товаров из избранного.');
-                setFavorites(prevFavorites);
-            });
-    };
 
     if (loading) {
         return (
@@ -149,7 +56,7 @@ export const FavoritesPage = () => {
         );
     }
 
-    if (favorites.length === 0 && !error) {
+    if (favoriteItems.length === 0 && !error) {
         return (
             <StyledContainer maxWidth="xl">
                 <Typography variant="h5" sx={{ fontWeight: 600, textAlign: 'center', color: '#FF6428', mb: 2 }}>
@@ -166,14 +73,15 @@ export const FavoritesPage = () => {
                 ИЗБРАННОЕ
             </Typography>
             {error && <div style={{ color: 'red', marginBottom: '10px', textAlign: 'center' }}>{error}</div>}
-            {favorites.length > 0 && (
+            {favoriteItems.length > 0 && (
                 <>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                        <ActionButton onClick={removeAll}>Удалить всё</ActionButton>
+                        <ActionButton onClick={clearFavorites}>Удалить всё</ActionButton>
                     </Box>
                     <ProductsGrid container>
-                        {favorites.map((guitar) => {
-                            const isInBasket = basket.some((item) => item.guitarId === guitar.guitarId);
+                        {favoriteItems.map((guitar) => { // guitar here is actually a FavoriteItem
+                            const isInBasket = isItemInBasket(guitar.guitarId);
+                            const isOutOfStock = guitar.guitarAmount === 0; // Assuming FavoriteItem has guitarAmount
                             return (
                                 <Grid item key={guitar.guitarId} xs={12} sm={6} md={4} lg={3}>
                                     <GuitarCard>
@@ -186,7 +94,7 @@ export const FavoritesPage = () => {
                                                 <Typography variant="body2" color="text.secondary">
                                                     {guitar.guitarCost}₸
                                                 </Typography>
-                                                {guitar.guitarAmount === 0 && (
+                                                {isOutOfStock && (
                                                     <Typography variant="body2" color="error.main">
                                                         Нет в наличии
                                                     </Typography>
@@ -194,27 +102,19 @@ export const FavoritesPage = () => {
                                             </Box>
                                             <Box display="flex" gap={1} mt={1}>
                                                 <ActionButton
-                                                    onClick={() =>
-                                                        addCart(
-                                                            guitar.guitarId,
-                                                            guitar.guitarImg,
-                                                            guitar.guitarName,
-                                                            guitar.guitarCost,
-                                                            guitar.guitarAmount
-                                                        )
-                                                    }
-                                                    disabled={guitar.guitarAmount === 0 || isInBasket}
+                                                    onClick={() => handleAddCart(guitar)}
+                                                    disabled={isOutOfStock || isInBasket}
                                                     sx={{
                                                         cursor:
-                                                            guitar.guitarAmount === 0 || isInBasket
+                                                            isOutOfStock || isInBasket
                                                                 ? 'not-allowed'
                                                                 : 'pointer',
-                                                        opacity: guitar.guitarAmount === 0 || isInBasket ? 0.5 : 1,
+                                                        opacity: isOutOfStock || isInBasket ? 0.5 : 1,
                                                     }}
                                                 >
                                                     <AddShoppingCartIcon />
                                                 </ActionButton>
-                                                <Button onClick={() => removeFavorite(guitar.guitarId)} color='error'>
+                                                <Button onClick={() => removeFromFavorites(guitar.guitarId)} color='error'>
                                                     <DeleteIcon />
                                                 </Button>
                                             </Box>
