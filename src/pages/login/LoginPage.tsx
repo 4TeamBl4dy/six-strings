@@ -69,7 +69,7 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
             setName(name);
             setPhone(phone);
             setAccount(true);
-            navigate(admin ? ROUTES.SALER_PAGE : ROUTES.HOME_PAGE);
+            navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
         } catch (error) {
             const axiosError = error as AxiosError;
             console.error(axiosError);
@@ -103,13 +103,12 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
         setShowPassword((prev) => !prev);
     };
 
-    const auth = fetchToken();
-
     useEffect(() => {
+        const auth = fetchToken();
         if (auth) {
             navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
         }
-    }, [auth, navigate]);
+    }, [navigate, admin]);
 
     return (
         <div className="Login">

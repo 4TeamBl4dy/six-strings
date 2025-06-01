@@ -5,12 +5,13 @@ import {
     ToolbarWrapper,
     ProductsGrid,
     GuitarCard,
-    GuitarCardMedia,
-    GuitarCardContent,
+    // GuitarCardMedia, // Removed
+    // GuitarCardContent, // Removed
     PageTitle,
 } from './styles';
 import { Typography, Grid, Box, Container } from '@mui/material';
-import { ModalWindow, CustomTextField, CustomSelect, Loader } from 'src/components';
+// ModalWindow removed from direct import if ProductCard handles it for this view
+import { CustomTextField, CustomSelect, Loader, ProductCard } from 'src/components';
 import { Guitar } from 'src/types';
 import apiClient from 'src/api';
 
@@ -23,9 +24,8 @@ export const ProductsPage: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const sellerLogin = localStorage.getItem('login') || '';
-
     useEffect(() => {
+        const sellerLogin = localStorage.getItem('login');
         setLoading(true);
         apiClient
             .get<Guitar[]>('/guitars')
@@ -40,7 +40,7 @@ export const ProductsPage: React.FC = () => {
                 setError('Не удалось загрузить каталог. Попробуйте позже.');
                 setLoading(false);
             });
-    }, [sellerLogin]);
+    }, []);
 
     const categories = [
         { value: 'electric', label: 'Электрические гитары' },
@@ -153,31 +153,8 @@ export const ProductsPage: React.FC = () => {
                     <div>Товары не найдены</div>
                 ) : (
                     filteredGuitars.map((guitar) => (
-                        <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3}>
-                            <GuitarCard>
-                                <GuitarCardMedia image={guitar.img} />
-                                <GuitarCardContent>
-                                    <Box>
-                                        <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                            {guitar.name}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {guitar.seller.login}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {guitar.cost} ₸
-                                        </Typography>
-                                        {guitar.amount === 0 && (
-                                            <Typography variant="body2" color="error.main">
-                                                Нет в наличии
-                                            </Typography>
-                                        )}
-                                    </Box>
-                                    <Box mt={1}>
-                                        <ModalWindow guitar={guitar} />
-                                    </Box>
-                                </GuitarCardContent>
-                            </GuitarCard>
+                        <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <ProductCard guitar={guitar} actionType="sellerViewOther" />
                         </Grid>
                     ))
                 )}
