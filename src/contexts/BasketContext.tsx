@@ -84,18 +84,59 @@ export const BasketProvider = ({ children }: { children: ReactNode }) => {
 
     const updateBasketItemCount = async (guitarId: string, action: 'plus' | 'minus') => {
         const token = localStorage.getItem('access_token');
-        if (!token) return;
+        if (!token) {
+            showToast('Пожалуйста, войдите в систему.', 'info');
+            return;
+        }
+
+        const originalBasket = [...basketItems];
+        const itemIndex = basketItems.findIndex(item => item.guitarId === guitarId);
+
+        if (itemIndex === -1) {
+            console.error('Item not found in basket');
+            showToast('Товар не найден в корзине.', 'error');
+            return;
+        }
+
+        const item = basketItems[itemIndex];
+        const newCount = action === 'plus' ? item.guitarCount + 1 : item.guitarCount - 1;
+
+        if (newCount < 1) {
+            // Optionally, could call removeFromBasket(guitarId) or confirm with user
+            showToast('Количество не может быть меньше 1. Удалите товар, если это необходимо.', 'info');
+            return;
+        }
+        if (newCount > item.guitarAmount) {
+            showToast(`Максимальное количество товара: ${item.guitarAmount}`, 'info');
+            return;
+        }
+
+        const updatedBasketItems = originalBasket.map(basketItem =>
+            basketItem.guitarId === guitarId ? { ...basketItem, guitarCount: newCount } : basketItem
+        );
+        setBasketItems(updatedBasketItems);
+
         try {
             await apiClient.put(`/basket/${guitarId}`, { action }, { headers: { Authorization: `Bearer ${token}` } });
-            await fetchBasket(); // Refetch
+            // Optimistic update is already done. No need to fetchBasket here if API returns no content or just confirms.
+            // If API returns the updated item or basket, you might want to use that response.
         } catch (err) {
+            console.error('Error updating basket item count:', err);
+            setBasketItems(originalBasket); // Revert to original state
             showToast('Ошибка при изменении количества товара', 'error');
         }
     };
 
     const removeFromBasket = async (guitarId: string) => {
         const token = localStorage.getItem('access_token');
-        if (!token) return;
+        if (!token) {
+            showToast('Пожалуйста, войдите в систему.', 'info');
+            return;
+        }
+
+        const originalBasket = [...basketItems];
+        setBasketItems(prevItems => prevItems.filter(item => item.guitarId !== guitarId));
+
         try {
             await apiClient({
                 method: 'POST', // Or DELETE if your backend supports it directly
@@ -104,8 +145,10 @@ export const BasketProvider = ({ children }: { children: ReactNode }) => {
                 data: { guitarId },
             });
             showToast('Товар удален из корзины', 'success');
-            await fetchBasket(); // Refetch
+            // Optimistic update is already done. No need to fetchBasket.
         } catch (err) {
+            console.error('Error removing item from basket:', err);
+            setBasketItems(originalBasket); // Revert to original state
             showToast('Ошибка при удалении товара из корзины', 'error');
         }
     };

@@ -79,7 +79,14 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
 
     const removeFromFavorites = async (guitarId: string) => {
         const token = localStorage.getItem('access_token');
-        if (!token) return;
+        if (!token) {
+            showToast('Пожалуйста, войдите в систему.', 'info');
+            return;
+        }
+
+        const originalFavorites = [...favoriteItems];
+        setFavoriteItems(prevItems => prevItems.filter(item => item.guitarId !== guitarId));
+
         try {
             await apiClient({
                 method: 'POST', // Or DELETE if your backend supports it directly
@@ -88,8 +95,10 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
                 data: { guitarId },
             });
             showToast('Товар удален из избранного', 'success');
-            await fetchFavorites(); // Refetch
+            // Optimistic update is already done. No need to fetchFavorites.
         } catch (err) {
+            console.error('Error removing item from favorites:', err);
+            setFavoriteItems(originalFavorites); // Revert to original state
             showToast('Ошибка при удалении товара из избранного', 'error');
         }
     };

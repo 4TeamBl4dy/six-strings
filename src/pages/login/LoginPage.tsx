@@ -69,7 +69,7 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
             setName(name);
             setPhone(phone);
             setAccount(true);
-            navigate(admin ? ROUTES.SALER_PAGE : ROUTES.HOME_PAGE);
+            navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
         } catch (error) {
             const axiosError = error as AxiosError;
             console.error(axiosError);
@@ -108,7 +108,7 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
         if (auth) {
             navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
         }
-    }, [navigate]);
+    }, [navigate, admin]);
 
     return (
         <div className="Login">
