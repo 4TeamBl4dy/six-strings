@@ -103,13 +103,12 @@ export const Login = ({ handleSetIsAuth }: LoginProps) => {
         setShowPassword((prev) => !prev);
     };
 
-    const auth = fetchToken();
-
     useEffect(() => {
+        const auth = fetchToken();
         if (auth) {
             navigate(admin ? ROUTES.MY_PRODUCTS : ROUTES.HOME_PAGE);
         }
-    }, [auth, navigate]);
+    }, [navigate]);
 
     return (
         <div className="Login">

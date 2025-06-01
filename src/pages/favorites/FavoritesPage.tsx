@@ -16,10 +16,10 @@ export const FavoritesPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
-    const token = localStorage.getItem('access_token');
     const navigate = useNavigate();
 
     const fetchFavorites = useCallback(() => {
+        const token = localStorage.getItem('access_token');
         if (!token) {
             setError('Пожалуйста, войдите в систему.');
             navigate('/login');
@@ -48,9 +48,10 @@ export const FavoritesPage = () => {
                     setError('Произошла ошибка при загрузке избранного.');
                 }
             });
-    }, [token, navigate]);
+    }, [navigate]);
 
     const fetchBasket = useCallback(() => {
+        const token = localStorage.getItem('access_token');
         if (!token) return;
 
         apiClient
@@ -63,7 +64,7 @@ export const FavoritesPage = () => {
             .catch((error: AxiosError) => {
                 console.error('Ошибка при загрузке корзины:', error);
             });
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         fetchFavorites();
@@ -72,6 +73,7 @@ export const FavoritesPage = () => {
 
     const addCart = useCallback(
         (guitarId: string, guitarImg: string, guitarName: string, guitarCost: number, guitarAmount: number) => {
+            const token = localStorage.getItem('access_token');
             const isAlreadyInBasket = basket.some((item) => item.guitarId === guitarId);
             if (isAlreadyInBasket) {
                 setError('Этот товар уже есть в вашей корзине.');
@@ -104,10 +106,11 @@ export const FavoritesPage = () => {
                     setBasket((prev) => prev.filter((item) => item.guitarId !== guitarId));
                 });
         },
-        [token, basket]
+        [basket]
     );
 
     const removeFavorite = (guitarId: string) => {
+        const token = localStorage.getItem('access_token');
         const prevFavorites = [...favorites];
         setFavorites(favorites.filter((guitar) => guitar.guitarId !== guitarId));
 
@@ -127,6 +130,7 @@ export const FavoritesPage = () => {
     };
 
     const removeAll = () => {
+        const token = localStorage.getItem('access_token');
         const prevFavorites = [...favorites];
         setFavorites([]);
 

@@ -26,7 +26,6 @@ export const Basket = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [openPayment, setOpenPayment] = useState(false);
 
-    const token = localStorage.getItem('access_token');
     const navigate = useNavigate();
 
     const calculateSum = (items: BasketItem[]) => {
@@ -34,6 +33,7 @@ export const Basket = () => {
     };
 
     useEffect(() => {
+        const token = localStorage.getItem('access_token');
         if (!token) {
             setError('Пожалуйста, войдите в систему.');
             navigate('/login');
@@ -62,9 +62,10 @@ export const Basket = () => {
                     setError('Произошла ошибка при загрузке корзины.');
                 }
             });
-    }, [navigate, token]);
+    }, [navigate]);
 
     const updateCount = (id: string, delta: number) => {
+        const token = localStorage.getItem('access_token');
         const guitar = basket.find((g) => g.guitarId === id);
         if (!guitar) return;
 
@@ -92,6 +93,7 @@ export const Basket = () => {
     };
 
     const removeBasket = (id: string) => {
+        const token = localStorage.getItem('access_token');
         const updatedBasket = basket.filter((g) => g.guitarId !== id);
         setBasket(updatedBasket);
 
@@ -110,6 +112,7 @@ export const Basket = () => {
     };
 
     const removeAll = () => {
+        const token = localStorage.getItem('access_token');
         const prevBasket = [...basket];
         setBasket([]);
 
@@ -124,6 +127,7 @@ export const Basket = () => {
     };
 
     const handlePaymentSuccess = async () => {
+        const token = localStorage.getItem('access_token');
         try {
             await apiClient.post(
                 '/basket/confirm',

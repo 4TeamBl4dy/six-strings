@@ -23,9 +23,8 @@ export const ProductsPage: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const sellerLogin = localStorage.getItem('login') || '';
-
     useEffect(() => {
+        const sellerLogin = localStorage.getItem('login');
         setLoading(true);
         apiClient
             .get<Guitar[]>('/guitars')
@@ -40,7 +39,7 @@ export const ProductsPage: React.FC = () => {
                 setError('Не удалось загрузить каталог. Попробуйте позже.');
                 setLoading(false);
             });
-    }, [sellerLogin]);
+    }, []);
 
     const categories = [
         { value: 'electric', label: 'Электрические гитары' },

@@ -60,10 +60,6 @@ export const MyProductsPage = () => {
     const [sortBy, setSortBy] = useState<string[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
-    const sellerLogin = localStorage.getItem('login') || '';
-    const userName = localStorage.getItem('userName') || '';
-    const userPhone = localStorage.getItem('userPhone') || '';
-
     const { showToast } = useToast();
 
     const categories = [
@@ -78,6 +74,12 @@ export const MyProductsPage = () => {
     // Загрузка товаров продавца
     useEffect(() => {
         const fetchGuitars = async () => {
+            const sellerLogin = localStorage.getItem('login');
+            if (!sellerLogin) {
+                setLoading(false);
+                setError('User not logged in');
+                return;
+            }
             try {
                 const response: AxiosResponse<Guitar[]> = await apiClient.get('/guitars');
                 setLoading(true);
@@ -88,10 +90,8 @@ export const MyProductsPage = () => {
                 setError('Не удалось загрузить товары.');
             }
         };
-        if (sellerLogin) {
-            fetchGuitars();
-        }
-    }, [sellerLogin]);
+        fetchGuitars();
+    }, []);
 
     // Получение уникальных типов и брендов для фильтров
     const uniqueTypes = Array.from(new Set(guitars.map((g) => g.type))).map((value) => ({
@@ -161,6 +161,15 @@ export const MyProductsPage = () => {
             return;
         }
 
+        const sellerLogin = localStorage.getItem('login');
+        const userName = localStorage.getItem('userName');
+        const userPhone = localStorage.getItem('userPhone');
+
+        if (!sellerLogin || !userName || !userPhone) {
+            setError('User information not found in localStorage.');
+            return;
+        }
+
         try {
             const formData = new FormData();
             if (img) {
@@ -205,10 +214,8 @@ export const MyProductsPage = () => {
         type,
         brand,
         editingGuitar,
-        sellerLogin,
-        userName,
-        userPhone,
         handleCloseModal,
+        showToast,
     ]);
 
     // Удаление товара
