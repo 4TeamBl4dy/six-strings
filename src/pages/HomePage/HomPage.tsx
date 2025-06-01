@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { BasketBtn, FavoriteBtn, ModalWindow, Loader } from 'src/components';
+import { Loader, ProductCard } from 'src/components'; // BasketBtn, FavoriteBtn, ModalWindow removed
 import { handleImageError } from 'src/utils';
 import {
     StyledContainer,
@@ -9,9 +9,9 @@ import {
     SliderWrapper,
     SliderButton,
     CarouselContainer,
-    GuitarCard,
-    GuitarCardMedia,
-    GuitarCardContent,
+    // GuitarCard, // Removed
+    // GuitarCardMedia, // Removed
+    // GuitarCardContent, // Removed
     PaginationWrapper,
     PaginationButton,
     ActivePaginationButton,
@@ -133,35 +133,19 @@ export const HomePage = () => {
                     {/* Контейнер слайдера */}
                     <CarouselContainer cardCount={guitars.length} ref={carouselRef}>
                         {guitars.map((guitar) => (
-                            <GuitarCard key={guitar._id}>
-                                <GuitarCardMedia image={guitar.img} onError={handleImageError} />
-                                <GuitarCardContent>
-                                    <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                        {guitar.name}
-                                    </Typography>
-                                    <Typography
-                                        variant="body2"
-                                        color="primary.main"
-                                        component={Link}
-                                        to={`${ROUTES.SALER_PRODUCTS}?seller=${guitar.seller.login}`}
-                                    >
-                                        {guitar.seller.login}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {guitar.cost}₸
-                                    </Typography>
-                                    <Box display="flex" mt={1}>
-                                        <BasketBtn guitar={guitar} />
-                                        <FavoriteBtn guitar={guitar} />
-                                        <ModalWindow guitar={guitar} />
-                                    </Box>
-                                    {guitar.amount === 0 && (
-                                        <Typography variant="body2" color="error.main" mt={0.5}>
-                                            Нет в наличии
-                                        </Typography>
-                                    )}
-                                </GuitarCardContent>
-                            </GuitarCard>
+                            // The ProductCard itself has a key if mapped directly, but here Grid item is more appropriate for key
+                            // ProductCard is designed to be placed in a Grid item or similar container that controls its width.
+                            // For a carousel, we might need a wrapper around ProductCard if ProductCard itself doesn't handle carousel item width well.
+                            // Assuming the CarouselContainer or a direct style on a wrapper div will manage the width for ProductCard.
+                            // The original GuitarCard was likely styled to fit in the carousel. ProductCard has maxWidth: 240.
+                            <Box key={guitar._id} sx={{
+                                minWidth: 200, // Ensure it has a minimum width in a flex container
+                                maxWidth: 240, // Consistent with ProductCard's internal maxWidth
+                                flex: '0 0 auto', // Prevent shrinking/growing in flex, auto basis
+                                p: 1 // Mimic original margin/padding for spacing if needed
+                            }}>
+                                <ProductCard guitar={guitar} actionType="customer" />
+                            </Box>
                         ))}
                     </CarouselContainer>
                     {/* Кнопка "Вперёд" */}

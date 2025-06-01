@@ -45,25 +45,6 @@ export const CarouselContainer = styled(Box, {
   width: '100%',
 }));
 
-export const GuitarCard = styled(Card)(({ theme }) => ({
-  minWidth: theme.breakpoints.down('sm') ? '160px' : '200px',
-  maxWidth: '200px',
-  flexShrink: 0,
-  marginLeft: theme.spacing(1),
-  marginRight: theme.spacing(1),
-  borderRadius: theme.spacing(2),
-  scrollSnapAlign: 'start',
-  scrollSnapStop: 'always',
-}));
-
-export const GuitarCardMedia = styled(CardMedia)({
-  height: '200px',
-});
-
-export const GuitarCardContent = styled(CardContent)({
-  padding: '16px',
-});
-
 export const PaginationWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'center',

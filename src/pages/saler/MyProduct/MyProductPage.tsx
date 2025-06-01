@@ -6,10 +6,10 @@ import {
     ToolbarWrapper,
     AddButton,
     ProductsGrid,
-    GuitarCard,
-    GuitarCardMedia,
-    GuitarCardContent,
-    ActionButton,
+    // GuitarCard, // Removed
+    // GuitarCardMedia, // Removed
+    // GuitarCardContent, // Removed
+    // ActionButton, // Removed (ProductCard handles its own actions)
     StyledModal,
     ModalContent,
     ModalHeader,
@@ -18,9 +18,9 @@ import {
     ModalButtonWrapper,
     ErrorAlert,
 } from './styles';
-import { Typography, Grid, Box, Container, Button } from '@mui/material';
+import { Typography, Grid, Box, Container, Button } from '@mui/material'; // Keep Button for modal cancel
 import CloseIcon from '@mui/icons-material/Close';
-import { CustomTextField, CustomSelect, CustomFileInput, Loader, useToast } from 'src/components';
+import { CustomTextField, CustomSelect, CustomFileInput, Loader, useToast, ProductCard } from 'src/components';
 import apiClient from 'src/api';
 
 interface Guitar {
@@ -305,37 +305,15 @@ export const MyProductsPage = () => {
             </ToolbarWrapper>
 
             {/* Карточки товаров */}
-            <ProductsGrid container>
+            <ProductsGrid container spacing={2}> {/* Added spacing for consistency */}
                 {filteredGuitars.map((guitar) => (
-                    <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={2}>
-                        <GuitarCard>
-                            <GuitarCardMedia image={guitar.img} />
-                            <GuitarCardContent>
-                                <Box>
-                                    <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                        {guitar.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Тип: {categories.find((cat) => cat.value === guitar.type)?.label || guitar.type}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Бренд: {guitar.brand}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {guitar.cost}₸
-                                    </Typography>
-                                    {guitar.amount === 0 && (
-                                        <Typography variant="body2" color="error.main">
-                                            Нет в наличии
-                                        </Typography>
-                                    )}
-                                </Box>
-                                <Box display="flex" gap={1} mt={1}>
-                                    <ModalButton onClick={() => handleEditGuitar(guitar)}>Изменить</ModalButton>
-                                    <Button sx={{fontSize: '12px'}} color={'error'} onClick={() => handleDeleteGuitar(guitar._id)}>Удалить</Button>
-                                </Box>
-                            </GuitarCardContent>
-                        </GuitarCard>
+                    <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex', justifyContent: 'center' }}> {/* Adjusted lg mapping for potentially wider cards or consistency */}
+                        <ProductCard
+                            guitar={guitar}
+                            actionType="sellerOwn"
+                            onEdit={handleEditGuitar}
+                            onDelete={handleDeleteGuitar}
+                        />
                     </Grid>
                 ))}
             </ProductsGrid>
@@ -355,7 +333,18 @@ export const MyProductsPage = () => {
                             Изображение товара
                         </Typography>
                         {previewImageUrl && (
-                            <GuitarCardMedia image={previewImageUrl} sx={{ height: 200, width: '100%', mb: 2 }} />
+                            <Box
+                                component="img"
+                                src={previewImageUrl}
+                                alt="Preview"
+                                sx={{
+                                    width: '100%',
+                                    height: 200, // Standardized height
+                                    objectFit: 'contain',
+                                    mb: 2,
+                                    borderRadius: 1, // Consistent with ProductCard's image style
+                                }}
+                            />
                         )}
                         <CustomFileInput onChange={handleImageChange} />
                     </Box>

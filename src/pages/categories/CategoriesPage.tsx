@@ -7,10 +7,11 @@ import {
     ToolbarWrapper,
     ProductsGrid,
     GuitarCard,
-    GuitarCardMedia,
-    GuitarCardContent,
+    // GuitarCardMedia, // Removed
+    // GuitarCardContent, // Removed
 } from './styles';
-import { BasketBtn, FavoriteBtn, ModalWindow, CustomTextField, CustomSelect, Title, Loader } from 'src/components';
+// BasketBtn, FavoriteBtn, ModalWindow removed below
+import { CustomTextField, CustomSelect, Title, Loader, ProductCard } from 'src/components';
 import { ROUTES } from 'src/constants';
 import { Guitar } from 'src/types';
 import apiClient from 'src/api';
@@ -127,38 +128,8 @@ export const CategoriesPage = () => {
                     <div>Товары не найдены</div>
                 ) : (
                     sortedAndFilteredGuitars.map((guitar) => (
-                        <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3}>
-                            <GuitarCard>
-                                <GuitarCardMedia image={guitar.img} />
-                                <GuitarCardContent>
-                                    <Box>
-                                        <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                            {guitar.name}
-                                        </Typography>
-                                        <Typography
-                                            variant="body2"
-                                            color="primary.main"
-                                            component={Link}
-                                            to={`${ROUTES.SALER_PRODUCTS}?seller=${guitar.seller.login}`}
-                                        >
-                                            {guitar.seller.login}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {guitar.cost}₸
-                                        </Typography>
-                                    </Box>
-                                    <Box display="flex" mt={1}>
-                                        <BasketBtn guitar={guitar} />
-                                        <FavoriteBtn guitar={guitar} />
-                                        <ModalWindow guitar={guitar} />
-                                    </Box>
-                                    {guitar.amount === 0 && (
-                                            <Typography variant="body2" color="error.main">
-                                                Нет в наличии
-                                            </Typography>
-                                        )}
-                                </GuitarCardContent>
-                            </GuitarCard>
+                        <Grid item key={guitar._id} xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <ProductCard guitar={guitar} actionType="customer" />
                         </Grid>
                     ))
                 )}
