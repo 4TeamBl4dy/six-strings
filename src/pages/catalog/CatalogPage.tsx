@@ -1,19 +1,13 @@
 import { useState, useEffect } from 'react';
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { Typography, Grid, Box, Container } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { AxiosResponse, AxiosError } from 'axios';
+import { Grid, Container } from '@mui/material';
 import {
     StyledContainer,
     ToolbarWrapper,
     ProductsGrid,
-    GuitarCard,
-    // GuitarCardMedia, // Removed
-    // GuitarCardContent, // Removed
 } from './styles';
 // BasketBtn, FavoriteBtn, ModalWindow removed below
 import { CustomTextField, CustomSelect, Title, ProductCard } from 'src/components';
-import { theme } from 'src/theme';
-import { ROUTES } from 'src/constants';
 import { Loader } from 'src/components';
 import { Guitar } from 'src/types';
 import apiClient from 'src/api';

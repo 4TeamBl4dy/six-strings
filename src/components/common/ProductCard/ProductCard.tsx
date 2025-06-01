@@ -37,6 +37,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
     transform: 'translateY(-4px)',
   },
   margin: 'auto', // Center in grid cell if cell is wider
+  marginBottom: 20,
 }));
 
 const StyledCardMedia = styled(CardMedia)({
@@ -151,7 +152,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ guitar, actionType = '
             <>
               <SellerActionButton size="small" onClick={() => onEdit(guitar)}>Изменить</SellerActionButton>
               <Button size="small" color="error" onClick={() => onDelete(guitar._id)}>Удалить</Button>
-              <ModalWindow guitar={guitar} />
             </>
           )}
           {actionType === 'sellerViewOther' && (

@@ -39,6 +39,7 @@ export const ModalWindow = ({ guitar }: ModalWindowProps) => {
           color: 'text.secondary',
           p: 0.5,
           minWidth: 'auto',
+          fontSize: '12px',
           '&:hover': { color: 'text.primary', backgroundColor: 'action.hover' }
         }}
       >
@@ -87,7 +88,7 @@ export const ModalWindow = ({ guitar }: ModalWindowProps) => {
                 sx={{
                   width: '100%',
                   height: 'auto',
-                  maxHeight: { xs: 250, md: 350 },
+                  maxHeight:245,
                   objectFit: 'contain',
                   borderRadius: theme.spacing(1),
                   mb: { xs: 2, md: 0 }
@@ -132,15 +133,14 @@ export const ModalWindow = ({ guitar }: ModalWindowProps) => {
                 <Typography variant="body1" component="span" fontWeight="600">Тип: </Typography>
                 <Typography variant="body1" component="span">{translatedType}</Typography>
               </Box>
-
-              <Typography variant="body1" fontWeight="600" sx={{ mt: 2, mb: 0.5 }}>
+            </Grid>
+          </Grid>
+          <Typography variant="body1" fontWeight="600" sx={{ mt: 2, mb: 0.5 }}>
                 Описание:
               </Typography>
               <Typography id="modal-description" variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto' }}>
                 {guitar.description || 'Описание отсутствует.'}
               </Typography>
-            </Grid>
-          </Grid>
         </Box>
       </Modal>
     </>
